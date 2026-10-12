@@ -70,8 +70,8 @@ function Accounts() {
       setAccounts((list) => list.map((x) => (x.id === a.id ? { ...x, enabled: !a.enabled } : x)));
     } catch (e) { setMsg({ type: 'error', text: e.message }); }
   };
-  const backfill = async () => {
-    try { const r = await api.tagBackfill(100); setMsg({ type: 'ok', text: t('acc.queued', { n: r.queued, a: r.accounts }) }); } catch (e) { setMsg({ type: 'error', text: e.message }); }
+  const backfill = async (force) => {
+    try { const r = await api.tagBackfill(100, force); setMsg({ type: 'ok', text: t('acc.queued', { n: r.queued, a: r.accounts }) }); } catch (e) { setMsg({ type: 'error', text: e.message }); }
   };
   return (
     <div style={card}>
@@ -82,7 +82,8 @@ function Accounts() {
           <input type="checkbox" checked={a.enabled} onChange={() => toggle(a)} /> {a.email}
         </label>
       ))}
-      <button style={{ ...btn, marginTop: 8 }} onClick={backfill}>{t('acc.backfill')}</button>
+      <button style={{ ...btn, marginTop: 8 }} onClick={() => backfill(false)}>{t('acc.backfill')}</button>
+      <button style={{ ...btn, marginTop: 8, marginLeft: 8 }} onClick={() => backfill(true)}>{t('acc.reclassify')}</button>
       <Message msg={msg} />
     </div>
   );

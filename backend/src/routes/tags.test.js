@@ -6,7 +6,7 @@ vi.mock('../plugins/accountConfig.js', () => ({ getAccountConfig: vi.fn(), setAc
 vi.mock('../services/tags/store.js', () => ({
   listDefinitions: vi.fn(), createDefinition: vi.fn(), updateDefinition: vi.fn(), deleteDefinition: vi.fn(),
   loadSettings: vi.fn(), saveSettings: vi.fn(), loadOwnedMessageForTags: vi.fn(), tagsForMessages: vi.fn(),
-  runForMessage: vi.fn(), setManualTag: vi.fn(), unclassifiedInboxMessageIds: vi.fn(),
+  runForMessage: vi.fn(), setManualTag: vi.fn(), inboxMessageIdsToClassify: vi.fn(),
 }));
 const enqueue = vi.hoisted(() => vi.fn(() => 1));
 vi.mock('../services/tags/queue.js', () => ({ tagQueue: { enqueue } }));
@@ -128,10 +128,13 @@ describe('messages', () => {
   it('backfills only accounts that opted in', async () => {
     listUserAccounts.mockResolvedValue([{ id: ID }, { id: ID2 }]);
     getAccountConfig.mockImplementation(async (_p, id) => ({ enabled: id === ID }));
-    store.unclassifiedInboxMessageIds.mockResolvedValue(['m1', 'm2']);
+    store.inboxMessageIdsToClassify.mockResolvedValue(['m1', 'm2']);
     const res = await call('POST', '/backfill', { limit: 50 });
     expect(res.status).toBe(202);
-    expect(store.unclassifiedInboxMessageIds).toHaveBeenCalledWith('u1', [ID], 50);
+    expect(store.inboxMessageIdsToClassify).toHaveBeenCalledWith([ID], 50, { includeClassified: false });
     expect((await call('POST', '/backfill', { limit: 9999 })).status).toBe(400);
+    expect((await call('POST', '/backfill', { limit: 10, force: 'yes' })).status).toBe(400);
+    await call('POST', '/backfill', { limit: 10, force: true });
+    expect(store.inboxMessageIdsToClassify).toHaveBeenLastCalledWith([ID], 10, { includeClassified: true });
   });
 });

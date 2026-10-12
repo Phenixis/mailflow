@@ -109,9 +109,10 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store (PostgreSQL
   });
 
   it('lists only unclassified INBOX messages of the given accounts', async () => {
-    expect(await store.unclassifiedInboxMessageIds(U1, [A1], 10)).toEqual([]); // M1 already has a run
-    expect(await store.unclassifiedInboxMessageIds(U2, [A2], 10)).toEqual([M2]);
-    expect(await store.unclassifiedInboxMessageIds(U1, [], 10)).toEqual([]);
+    expect(await store.inboxMessageIdsToClassify([A1], 10)).toEqual([]); // M1 already has a run
+    expect(await store.inboxMessageIdsToClassify([A1], 10, { includeClassified: true })).toEqual([M1]);
+    expect(await store.inboxMessageIdsToClassify([A2], 10)).toEqual([M2]);
+    expect(await store.inboxMessageIdsToClassify([], 10)).toEqual([]);
   });
 
   it('cascades: deleting a message removes its tags and run', async () => {

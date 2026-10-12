@@ -529,7 +529,7 @@ export const api = {
   tagMessageDetail: (id) => request('GET', `/tags/messages/${id}`),
   tagPin: (messageId, tagId, applied) => request('PUT', `/tags/messages/${messageId}/tags/${tagId}`, { applied }),
   tagReclassify: (messageId) => request('POST', `/tags/messages/${messageId}/classify`),
-  tagBackfill: (limit) => request('POST', '/tags/backfill', { limit }),
+  tagBackfill: (limit, force = false) => request('POST', '/tags/backfill', { limit, force }),
 
   // GTD — Inbox-Zero pet. Import uploads your own pet (pet.json text + a base64 spritesheet)
   // and caches it server-side; meta returns the animation descriptor; the sheet URL is used

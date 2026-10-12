@@ -6,7 +6,7 @@ import { listUserAccounts } from '../services/mailAccess.js';
 import { getAccountConfig, setAccountConfig } from '../plugins/accountConfig.js';
 import {
   listDefinitions, createDefinition, updateDefinition, deleteDefinition, loadSettings, saveSettings,
-  loadOwnedMessageForTags, tagsForMessages, runForMessage, setManualTag, unclassifiedInboxMessageIds,
+  loadOwnedMessageForTags, tagsForMessages, runForMessage, setManualTag, inboxMessageIdsToClassify,
 } from '../services/tags/store.js';
 import { tagQueue } from '../services/tags/queue.js';
 import { PLUGIN_ID } from '../services/tags/defaults.js';
@@ -166,15 +166,17 @@ router.post('/messages/:id/classify', async (req, res) => {
   res.status(202).json({ queued: 1 });
 });
 
-// Classify existing INBOX mail that has never been through Jev (newest first).
+// Classify existing INBOX mail, newest first: by default only mail never through Jev; with
+// `force: true` also mail already classified (a manual pin is never overwritten).
 router.post('/backfill', async (req, res) => {
   const limit = req.body?.limit ?? 100;
+  if ('force' in (req.body ?? {}) && typeof req.body.force !== 'boolean') return bad(res, 'force must be a boolean');
   if (!(Number.isInteger(limit) && limit >= 1 && limit <= 500)) return bad(res, 'limit must be an integer from 1 to 500');
   if (!(await loadSettings(req.session.userId)).apiKey) return bad(res, 'No Jev API key configured');
   const accounts = await listUserAccounts(req.session.userId);
   const enabled = [];
   for (const a of accounts) if ((await getAccountConfig(PLUGIN_ID, a.id)).enabled) enabled.push(a.id);
-  const ids = await unclassifiedInboxMessageIds(req.session.userId, enabled, limit);
+  const ids = await inboxMessageIdsToClassify(enabled, limit, { includeClassified: req.body?.force === true });
   res.status(202).json({ queued: tagQueue.enqueue(req.session.userId, ids), accounts: enabled.length });
 });
 

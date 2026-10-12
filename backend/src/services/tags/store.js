@@ -210,13 +210,14 @@ export async function setManualTag(userId, messageId, tagId, applied) {
   return rowCount > 0;
 }
 
-// INBOX messages of the user's enabled accounts that have never been classified, newest first.
-export async function unclassifiedInboxMessageIds(userId, accountIds, limit) {
+// INBOX messages of the user's enabled accounts, newest first. By default only those never
+// classified; `includeClassified` also returns the ones already done (to redo them).
+export async function inboxMessageIdsToClassify(accountIds, limit, { includeClassified = false } = {}) {
   if (!accountIds.length) return [];
   const { rows } = await query(
     `SELECT m.id FROM messages m
       WHERE m.account_id = ANY($1::uuid[]) AND m.folder = 'INBOX' AND m.is_deleted = false
-        AND NOT EXISTS (SELECT 1 FROM message_tag_runs r WHERE r.message_id = m.id)
+        ${includeClassified ? '' : 'AND NOT EXISTS (SELECT 1 FROM message_tag_runs r WHERE r.message_id = m.id)'}
       ORDER BY m.date DESC NULLS LAST LIMIT $2`,
     [accountIds, limit]
   );

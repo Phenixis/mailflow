@@ -73,7 +73,8 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
   if (tagFiltered) {
     const needed = tagMode === 'all' ? tagKeys.length : 1;
     whereConditions.push(`(SELECT COUNT(DISTINCT d.key) FROM message_tags mt JOIN tag_definitions d ON d.id = mt.tag_id
-      WHERE mt.message_id = m.id AND NOT mt.dismissed AND d.user_id = $${p++} AND d.key = ANY($${p++}::text[])) >= $${p++}`);
+      WHERE mt.account_id = m.account_id AND mt.email_key = tag_email_key(m.message_id, m.id)
+        AND NOT mt.dismissed AND d.user_id = $${p++} AND d.key = ANY($${p++}::text[])) >= $${p++}`);
     values.push(userId, tagKeys, needed);
   }
 

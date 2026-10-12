@@ -357,6 +357,7 @@ describe('listMessages — tag filter', () => {
     expect(countSql).toContain('COUNT(*)');
     expect(countSql).toContain('message_tags');
     expect(countSql).toContain('NOT mt.dismissed');
+    expect(countSql).toContain('tag_email_key(m.message_id, m.id)'); // tags follow the email, not the row id
     expect(countSql).not.toContain('total_count');
     expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', ['urgent'], 1]);
     expect(result.total).toBe(3);

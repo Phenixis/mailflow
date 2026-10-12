@@ -2370,6 +2370,7 @@
       "keyEnv": "set, from the server environment",
       "keyUnset": "not set",
       "keyPlaceholderSet": "Enter a new key to replace it",
+      "keyFormatHint": "A TypeSafe key usually starts with \"apikey_\". Paste the whole key, not just a part of it.",
       "saved": "API key saved",
       "removed": "API key removed",
       "low": "Unsure band: below this = no",

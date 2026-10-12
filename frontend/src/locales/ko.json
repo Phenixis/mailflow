@@ -2370,6 +2370,7 @@
       "keyEnv": "설정됨(서버 환경에서)",
       "keyUnset": "설정 안 됨",
       "keyPlaceholderSet": "바꾸려면 새 키를 입력하세요",
+      "keyFormatHint": "TypeSafe 키는 보통 \"apikey_\"로 시작합니다. 키의 일부가 아니라 전체를 붙여넣으세요.",
       "saved": "API 키를 저장했습니다",
       "removed": "API 키를 삭제했습니다",
       "low": "불확실 구간: 이 값 미만 = 아니오",

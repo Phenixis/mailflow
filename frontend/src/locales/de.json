@@ -2370,6 +2370,7 @@
       "keyEnv": "gesetzt, aus der Serverumgebung",
       "keyUnset": "nicht gesetzt",
       "keyPlaceholderSet": "Neuen Schlüssel zum Ersetzen eingeben",
+      "keyFormatHint": "Ein TypeSafe-Schlüssel beginnt in der Regel mit „apikey_“. Fügen Sie den ganzen Schlüssel ein, nicht nur einen Teil.",
       "saved": "API-Schlüssel gespeichert",
       "removed": "API-Schlüssel entfernt",
       "low": "Unsicherheitsbereich: darunter = nein",

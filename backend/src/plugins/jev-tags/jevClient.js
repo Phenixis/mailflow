@@ -36,6 +36,9 @@ export async function askJev({
         throw new JevError(`Jev API HTTP ${res.status}`, { status: res.status, retryable: true });
       }
       // Never echo the response body: it could carry request content or credentials.
+      if (res.status === 401) {
+        throw new JevError('Jev API HTTP 401: the API key was rejected (a TypeSafe key looks like apikey_..._..., check the whole key was pasted)', { status: 401 });
+      }
       if (!res.ok) throw new JevError(`Jev API HTTP ${res.status}`, { status: res.status });
       let json;
       try { json = JSON.parse(res.text); } catch { throw new JevError('Jev API returned invalid JSON'); }

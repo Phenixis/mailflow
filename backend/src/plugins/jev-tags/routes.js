@@ -148,7 +148,7 @@ router.post('/messages/:id/classify', async (req, res) => {
   res.status(202).json({ queued: 1 });
 });
 
-// Classify existing INBOX mail, newest first: by default only mail Jev has not seen; with `force: true`
+// Classify existing INBOX mail, newest first: by default only mail Jev has not seen or failed on; with `force: true`
 // also mail already classified (a tag the user set or removed by hand is never overridden).
 router.post('/backfill', async (req, res) => {
   const limit = req.body?.limit ?? 100;
@@ -158,7 +158,7 @@ router.post('/backfill', async (req, res) => {
   const accounts = await listUserAccounts(req.session.userId);
   const enabled = [];
   for (const a of accounts) if ((await getAccountConfig(PLUGIN_ID, a.id)).enabled) enabled.push(a.id);
-  const ids = await listInboxMessageIds(req.session.userId, enabled, limit, { withoutAnnotation: req.body?.force === true ? null : PLUGIN_ID });
+  const ids = await listInboxMessageIds(req.session.userId, enabled, limit, req.body?.force === true ? {} : { withoutAnnotation: PLUGIN_ID, retryStatuses: ['error'] });
   res.status(202).json({ queued: jevQueue.enqueue(req.session.userId, ids), accounts: enabled.length });
 });
 

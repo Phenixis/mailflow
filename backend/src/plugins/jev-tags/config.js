@@ -28,7 +28,7 @@ export async function saveSettings(userId, patch) {
     if (patch[field] !== undefined) next[field] = patch[field];
   }
   if (patch.apiKey !== undefined) {
-    if (patch.apiKey) next.apiKeyEnc = encryptSecret(patch.apiKey);
+    if (patch.apiKey?.trim()) next.apiKeyEnc = encryptSecret(patch.apiKey.trim()); // a pasted key often carries a newline or space
     else delete next.apiKeyEnc;
   }
   await storage.put(PLUGIN_ID, settingsKey(userId), { value: next, ownerId: userId });

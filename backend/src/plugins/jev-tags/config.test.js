@@ -43,6 +43,11 @@ describe('settings', () => {
     expect(await loadSettings('u1')).toMatchObject({ apiKey: 'from-env', apiKeySource: 'env', model: 'jev-x' });
   });
 
+  it('trims whitespace around a pasted key', async () => {
+    await saveSettings('u1', { apiKey: '  apikey_a_b\n' });
+    expect((await loadSettings('u1')).apiKey).toBe('apikey_a_b');
+  });
+
   it('keeps each user\'s settings separate', async () => {
     await saveSettings('u1', { apiKey: 'a' });
     expect((await loadSettings('u2')).apiKey).toBeNull();

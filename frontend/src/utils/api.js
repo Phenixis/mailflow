@@ -514,6 +514,21 @@ export const api = {
   gtdDone: (id, states) => request('POST', '/gtd/done', { id, states }),
   gtdEnsureFolders: (accountId, folders) => request('POST', '/gtd/folders/ensure', { accountId, folders }),
 
+  // Jev tags (plugin): definitions, settings, per-account opt-in, stored answers.
+  tagDefinitions: () => request('GET', '/tags/definitions'),
+  tagCreate: (body) => request('POST', '/tags/definitions', body),
+  tagUpdate: (id, patch) => request('PATCH', `/tags/definitions/${id}`, patch),
+  tagDelete: (id) => request('DELETE', `/tags/definitions/${id}`),
+  tagSettings: () => request('GET', '/tags/settings'),
+  tagSaveSettings: (patch) => request('PUT', '/tags/settings', patch),
+  tagAccounts: () => request('GET', '/tags/accounts'),
+  tagSetAccount: (id, enabled) => request('PUT', `/tags/accounts/${id}`, { enabled }),
+  tagsForMessages: (ids) => request('GET', `/tags/messages?ids=${ids.join(',')}`),
+  tagMessageDetail: (id) => request('GET', `/tags/messages/${id}`),
+  tagPin: (messageId, tagId, applied) => request('PUT', `/tags/messages/${messageId}/tags/${tagId}`, { applied }),
+  tagReclassify: (messageId) => request('POST', `/tags/messages/${messageId}/classify`),
+  tagBackfill: (limit) => request('POST', '/tags/backfill', { limit }),
+
   // GTD — Inbox-Zero pet. Import uploads your own pet (pet.json text + a base64 spritesheet)
   // and caches it server-side; meta returns the animation descriptor; the sheet URL is used
   // directly as an <img>/background src (authenticated same-origin, cookies ride along).

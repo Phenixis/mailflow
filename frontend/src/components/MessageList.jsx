@@ -32,6 +32,7 @@ import ReplyDraftIndicator from './ReplyDraftIndicator.jsx';
 import SpamExplainModal from './SpamExplainModal.jsx';
 import { shortcutBus } from '../utils/shortcutBus.js';
 import { createLatestRequest } from '../utils/latestRequest.js';
+import { PluginSlot } from '../plugins/PluginSlot.jsx';
 import { pendingMarkReadMap, completedMarkReadMap, setPending } from '../utils/pendingReads.js';
 import { applyDeleteGuard, clearDeleteGuard, clearPendingDelete, setCompletedDelete, setPendingDelete, threadDeleteGuardKey } from '../utils/pendingDeletes.js';
 import {
@@ -4634,6 +4635,7 @@ function ThreadRow({ message, isExpanded, threadMsgs, isLoadingThread, selectedM
             </span>
             <ReplyDraftIndicator message={message} />
             <SpamBadge message={message} onClick={onExplainSpam} />
+            <PluginSlot name="row-subject-badge" ctx={{ message }} />
           </div>
           {/* Row 3: snippet */}
           {showMessagePreviews && (

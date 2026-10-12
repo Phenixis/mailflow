@@ -2041,6 +2041,7 @@
       "keyEnv": "nastaven z prostředí serveru",
       "keyUnset": "nenastaven",
       "keyPlaceholderSet": "Zadejte nový klíč, kterým ji nahradíte",
+      "keyFormatHint": "Klíč TypeSafe obvykle začíná „apikey_“. Vložte celý klíč, ne jen jeho část.",
       "saved": "Klíč API uložen",
       "removed": "Klíč API odstraněn",
       "low": "Pásmo nejistoty: pod = ne",

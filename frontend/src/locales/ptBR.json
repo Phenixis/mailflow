@@ -2022,6 +2022,7 @@
       "keyEnv": "definida, pelo ambiente do servidor",
       "keyUnset": "não definida",
       "keyPlaceholderSet": "Digite uma nova chave para substituí-la",
+      "keyFormatHint": "Uma chave da TypeSafe geralmente começa com \"apikey_\". Cole a chave inteira, não apenas uma parte.",
       "saved": "Chave de API salva",
       "removed": "Chave de API removida",
       "low": "Faixa de dúvida: abaixo = não",

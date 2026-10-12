@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { api } from '../utils/api.js';
-import { useTagStore, requestTags, invalidateTags, clearTagCache, countTags } from './tagStore.js';
+import { useTagStore, requestTags, invalidateTags, clearTagCache, countTags, bumpTagDefinitions } from './tagStore.js';
 
 const wait = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 const tag = (key) => ({ tagId: `t-${key}`, key, name: key, color: '#000000', source: 'manual' });
@@ -51,5 +51,16 @@ describe('countTags', () => {
     const byMessage = { a: [{ tagId: 't1' }, { tagId: 't2' }], b: [{ tagId: 't1' }], c: [] };
     assert.deepEqual(countTags(['a', 'b', 'c', 'unknown'], byMessage), { t1: 2, t2: 1 });
     assert.deepEqual(countTags([], byMessage), {});
+  });
+});
+
+describe('tag definitions revision', () => {
+  it('increases on every announced change, and clearing the message cache keeps it', () => {
+    const before = useTagStore.getState().definitionsRevision;
+    bumpTagDefinitions();
+    bumpTagDefinitions();
+    assert.equal(useTagStore.getState().definitionsRevision, before + 2);
+    clearTagCache();
+    assert.equal(useTagStore.getState().definitionsRevision, before + 2);
   });
 });

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../utils/api.js';
-import { clearTagCache } from './tagStore.js';
+import { clearTagCache, bumpTagDefinitions, useTagDefinitionsRevision } from './tagStore.js';
 import { useTranslation } from 'react-i18next';
 
 const card = { border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', background: 'var(--bg-secondary)', marginTop: 12 };
@@ -84,15 +84,18 @@ export default function TagsSettings() {
   const { t } = useTranslation();
   const [defs, setDefs] = useState(null);
   const [msg, setMsg] = useState(null);
+  const revision = useTagDefinitionsRevision();
   const load = useCallback(() => { api.tagDefinitions().then(setDefs).catch((e) => setMsg(e.message)); }, []);
-  useEffect(load, [load]);
+  useEffect(load, [load, revision]);
+  // A change made here is announced so the other screens reload their list of tags.
+  const changed = useCallback(() => { bumpTagDefinitions(); }, []);
   return (
     <div style={{ marginTop: 20 }}>
       <div style={{ fontWeight: 700, fontSize: 15 }}>{t('tags.title')}</div>
       <div style={card}>
         <div style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '0 0 4px' }}>{t('tags.settings.note')}</div>
-        {(defs || []).map((d) => <TagRow key={d.id} def={d} onChanged={load} />)}
-        <NewTag onCreated={load} />
+        {(defs || []).map((d) => <TagRow key={d.id} def={d} onChanged={changed} />)}
+        <NewTag onCreated={changed} />
         <Message msg={msg} />
       </div>
     </div>

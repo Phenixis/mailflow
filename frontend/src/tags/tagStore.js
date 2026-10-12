@@ -1,5 +1,6 @@
 // Client-side cache of the tags on messages. Rows ask for their message's tags; lookups made in the
 // same tick are batched into one request. `tags_updated` (WebSocket) invalidates and refetches.
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import { api } from '../utils/api.js';
 
@@ -44,4 +45,11 @@ export function invalidateTags(ids) {
 
 export function clearTagCache() {
   useTagStore.setState({ byMessage: {} });
+}
+
+// The tags on one message, fetched (batched) on first use and kept fresh by invalidateTags.
+export function useMessageTags(messageId) {
+  const tags = useTagStore((s) => s.byMessage[messageId]);
+  useEffect(() => { if (messageId) requestTags(messageId); }, [messageId]);
+  return tags || [];
 }

@@ -1,14 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useTagStore, requestTags, invalidateTags } from './tagStore.js';
-import { api } from '../utils/api.js';
+import { useMessageTags } from './tagStore.js';
+import TagPickerList from './TagPickerList.jsx';
 import { PluginSlot } from '../plugins/PluginSlot.jsx';
 import { useT } from './strings.js';
-
-export function useMessageTags(messageId) {
-  const tags = useTagStore((s) => s.byMessage[messageId]);
-  useEffect(() => { if (messageId) requestTags(messageId); }, [messageId]);
-  return tags || [];
-}
 
 const sourceNote = (tag, t) => (tag.source === 'manual' ? t('source.manual') : t('source.auto', { source: tag.source }));
 
@@ -42,17 +36,8 @@ export function HeaderTags({ message }) {
   const t = useT();
   const tags = useMessageTags(message.id);
   const [open, setOpen] = useState(false);
-  const [defs, setDefs] = useState(null);
 
   useEffect(() => { setOpen(false); }, [message.id]);
-  useEffect(() => {
-    if (open && !defs) api.tagDefinitions().then((d) => setDefs(d.filter((x) => x.enabled))).catch(() => setDefs([]));
-  }, [open, defs]);
-
-  const toggle = async (def, on) => {
-    await api.tagSet(message.id, def.id, on);
-    invalidateTags([message.id]);
-  };
 
   return (
     <>
@@ -65,17 +50,8 @@ export function HeaderTags({ message }) {
       </button>
       <PluginSlot name="message-header-badge" ctx={{ message }} />
       {open && (
-        <div style={{ flexBasis: '100%', fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)', display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          {defs && !defs.length && <span>{t('header.none')}</span>}
-          {(defs || []).map((def) => {
-            const on = tags.some((x) => x.tagId === def.id);
-            return (
-              <label key={def.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input type="checkbox" checked={on} onChange={() => toggle(def, !on)} />
-                <span style={{ color: def.color }}>{def.name}</span>
-              </label>
-            );
-          })}
+        <div style={{ flexBasis: '100%', fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>
+          <TagPickerList messageIds={[message.id]} />
         </div>
       )}
     </>

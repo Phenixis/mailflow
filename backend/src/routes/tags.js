@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { imapManager } from '../index.js';
 import {
-  KEY_RE, listDefinitions, createDefinition, updateDefinition, deleteDefinition, tagsForMessages, setManualTag,
+  KEY_RE, listDefinitions, createDefinition, updateDefinition, deleteDefinition, tagsForMessages, setManualTag, setManualTags,
 } from '../services/tags/store.js';
 
 const router = Router();
@@ -58,6 +58,20 @@ router.get('/messages', async (req, res) => {
   const ids = String(req.query.ids || '').split(',').filter(Boolean);
   if (ids.length > 200 || ids.some((id) => !UUID.test(id))) return bad(res, 'ids must be up to 200 message ids');
   res.json(await tagsForMessages(req.session.userId, ids));
+});
+
+// Add or remove one tag on several messages at once (up to 200), by hand.
+router.post('/messages/bulk', async (req, res) => {
+  const { messageIds, tagId, applied } = req.body ?? {};
+  if (!Array.isArray(messageIds) || !messageIds.length || messageIds.length > 200 || messageIds.some((id) => !UUID.test(id))) {
+    return bad(res, 'messageIds must be 1 to 200 message ids');
+  }
+  if (!UUID.test(tagId ?? '')) return bad(res, 'Invalid tagId');
+  if (typeof applied !== 'boolean') return bad(res, 'applied (boolean) is required');
+  const changed = await setManualTags(req.session.userId, messageIds, tagId, applied);
+  if (!changed.length) return res.status(404).json({ error: 'No message or tag found' });
+  imapManager.broadcast({ type: 'tags_updated', messageIds: changed }, req.session.userId);
+  res.json({ updated: changed.length });
 });
 
 // Add (applied: true) or remove (applied: false) a tag on one message, by hand.

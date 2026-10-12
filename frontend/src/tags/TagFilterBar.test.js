@@ -38,32 +38,33 @@ globalThis.__VITE_ENV__ = { MODE: 'test', DEV: false, PROD: true };
 
 const { useStore } = await import('../store/index.js');
 const { api } = await import('../utils/api.js');
-const { setTagFilter } = await import('./TagFilterBar.jsx');
-const { getTagFilter, setTagFilterValue } = await import('./filterState.js');
+const { applyTagFilter } = await import('./TagFilterBar.jsx');
+const { getTagFilter, setTagFilterState } = await import('./filterState.js');
 
 describe('tag filter', () => {
-  beforeEach(() => setTagFilterValue(null));
+  beforeEach(() => setTagFilterState({ keys: [], mode: 'any' }));
 
   it('reloads the list from the first page when the filter changes, and clears it', () => {
     const before = useStore.getState().messagesRefreshToken;
     useStore.setState({ messages: [{ id: 'x' }], messagesOffset: 50, hasMoreMessages: false });
-    setTagFilter('urgent');
+    applyTagFilter({ keys: ['urgent', 'important'], mode: 'all' });
     const s = useStore.getState();
-    assert.equal(getTagFilter(), 'urgent');
+    assert.deepEqual(getTagFilter(), { keys: ['urgent', 'important'], mode: 'all' });
     assert.equal(s.messagesRefreshToken, before + 1);
     assert.deepEqual([s.messages.length, s.messagesOffset, s.hasMoreMessages], [0, 0, true]);
-    setTagFilter(null);
-    assert.equal(getTagFilter(), null);
+    applyTagFilter({ keys: [] });
+    assert.deepEqual(getTagFilter().keys, []);
   });
 
-  it('adds the tag to every message-list request while a filter is on', async () => {
+  it('adds the tags and the mode to every message-list request while a filter is on', async () => {
     const urls = [];
     globalThis.fetch = async (url) => { urls.push(String(url)); return { ok: true, json: async () => ({ messages: [], total: 0 }) }; };
     await api.getMessages({ limit: 5 });
-    setTagFilterValue('urgent');
+    setTagFilterState({ keys: ['urgent', 'important'], mode: 'all' });
     await api.getMessages({ limit: 5 });
     assert.ok(!urls[0].includes('tag='));
-    assert.match(urls[1], /[?&]tag=urgent/);
+    assert.match(urls[1], /[?&]tag=urgent%2Cimportant/);
+    assert.match(urls[1], /[?&]tagMode=all/);
     assert.match(urls[1], /limit=5/);
   });
 });

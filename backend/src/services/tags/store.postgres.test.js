@@ -73,6 +73,18 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store (PostgreSQL
     expect((await store.tagsForMessages(U1, [M1]))[M1]).toHaveLength(1);
   });
 
+  it('sets a tag on several messages at once, only for the ones the user owns', async () => {
+    const defs = await store.listDefinitions(U1);
+    const travel = await store.createDefinition(U1, { key: 'trip', name: 'Trip' });
+    expect(defs.length).toBeGreaterThan(0);
+    expect(await store.setManualTags(U1, [M1, M2], travel.id, true)).toEqual([M1]); // M2 belongs to U2
+    expect((await store.tagsForMessages(U1, [M1]))[M1].map((t) => t.key)).toContain('trip');
+    expect(await store.setManualTags(U1, [M1], travel.id, false)).toEqual([M1]);
+    expect((await store.tagsForMessages(U1, [M1]))[M1].map((t) => t.key)).not.toContain('trip');
+    expect(await store.setManualTags(U1, [], travel.id, true)).toEqual([]);
+    await store.deleteDefinition(U1, travel.id);
+  });
+
   it('a plugin applies and removes only its own tags and never overrides the user', async () => {
     const defs = await store.listDefinitions(U1);
     const urgent = defs.find((d) => d.key === 'urgent');

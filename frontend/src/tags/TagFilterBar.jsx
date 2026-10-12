@@ -1,19 +1,20 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { api } from '../utils/api.js';
 import { useStore } from '../store/index.js';
-import { getTagFilter, setTagFilterValue, subscribeTagFilter } from './filterState.js';
+import { getTagFilter, setTagFilterState, subscribeTagFilter } from './filterState.js';
 import { useT } from './strings.js';
 
-// Set (or clear) the filter and make the list reload from the first page.
-export function setTagFilter(key) {
-  setTagFilterValue(key);
+// Change the filter and make the list reload from the first page.
+export function applyTagFilter(next) {
+  setTagFilterState(next);
   useStore.setState((s) => ({ messagesRefreshToken: s.messagesRefreshToken + 1, messages: [], messagesOffset: 0, hasMoreMessages: true }));
 }
 
-// A row of tag chips above the message list.
+// A row of tag chips above the message list. Clicking chips selects several tags; with two or more
+// selected a switch chooses between "any of them" and "all of them".
 export default function TagFilterBar() {
   const t = useT();
-  const active = useSyncExternalStore(subscribeTagFilter, getTagFilter);
+  const { keys, mode } = useSyncExternalStore(subscribeTagFilter, getTagFilter);
   const [defs, setDefs] = useState([]);
   useEffect(() => { api.tagDefinitions().then((d) => setDefs(d.filter((x) => x.enabled))).catch(() => {}); }, []);
   if (!defs.length) return null;
@@ -23,12 +24,23 @@ export default function TagFilterBar() {
     border: `1px solid ${selected ? color : 'var(--border)'}`, background: selected ? `${color}1f` : 'none',
     color: selected ? color : 'var(--text-secondary)', fontWeight: selected ? 600 : 400,
   });
+  const toggle = (key) => applyTagFilter({ keys: keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key] });
+
   return (
     <div aria-label={t('filter.label')} style={{ display: 'flex', gap: 6, padding: '6px 10px', overflowX: 'auto', scrollbarWidth: 'none', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
-      <button style={chip(!active, 'var(--accent)')} onClick={() => setTagFilter(null)}>{t('filter.all')}</button>
+      <button style={chip(!keys.length, 'var(--accent)')} onClick={() => applyTagFilter({ keys: [] })}>{t('filter.all')}</button>
       {defs.map((d) => (
-        <button key={d.id} style={chip(active === d.key, d.color)} onClick={() => setTagFilter(active === d.key ? null : d.key)}>{d.name}</button>
+        <button key={d.id} style={chip(keys.includes(d.key), d.color)} onClick={() => toggle(d.key)}>{d.name}</button>
       ))}
+      {keys.length > 1 && (
+        <button
+          title={t('filter.modeHint')}
+          style={{ ...chip(false, 'var(--accent)'), marginLeft: 'auto', color: 'var(--text-primary)' }}
+          onClick={() => applyTagFilter({ mode: mode === 'any' ? 'all' : 'any' })}
+        >
+          {t(mode === 'any' ? 'filter.modeAny' : 'filter.modeAll')}
+        </button>
+      )}
     </div>
   );
 }

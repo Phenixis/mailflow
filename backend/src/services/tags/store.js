@@ -80,20 +80,27 @@ export async function tagsForMessages(userId, messageIds) {
   return out;
 }
 
-// The user adds or removes a tag by hand. Removing keeps the row (dismissed) so an automatic source
-// does not put it back; adding again clears that and takes ownership as 'manual'.
-export async function setManualTag(userId, messageId, tagId, on) {
-  const { rowCount } = await query(
+// The user adds or removes a tag by hand on one or more messages. Removing keeps the row (dismissed)
+// so an automatic source does not put it back; adding again clears that and takes ownership as
+// 'manual'. Returns the ids of the messages that were the user's and got the change.
+export async function setManualTags(userId, messageIds, tagId, on) {
+  if (!messageIds.length) return [];
+  const { rows } = await query(
     `INSERT INTO message_tags (message_id, tag_id, source, dismissed)
      SELECT m.id, d.id, 'manual', $4
        FROM messages m
        JOIN email_accounts a ON a.id = m.account_id
        JOIN tag_definitions d ON d.user_id = a.user_id
-      WHERE m.id = $1 AND d.id = $2 AND a.user_id = $3
-     ON CONFLICT (message_id, tag_id) DO UPDATE SET dismissed = EXCLUDED.dismissed, source = 'manual'`,
-    [messageId, tagId, userId, !on]
+      WHERE m.id = ANY($1::uuid[]) AND d.id = $2 AND a.user_id = $3
+     ON CONFLICT (message_id, tag_id) DO UPDATE SET dismissed = EXCLUDED.dismissed, source = 'manual'
+     RETURNING message_id`,
+    [messageIds, tagId, userId, !on]
   );
-  return rowCount > 0;
+  return rows.map((r) => r.message_id);
+}
+
+export async function setManualTag(userId, messageId, tagId, on) {
+  return (await setManualTags(userId, [messageId], tagId, on)).length > 0;
 }
 
 // A plugin puts a tag on a message. It never overrides the user: if the user set or removed this tag

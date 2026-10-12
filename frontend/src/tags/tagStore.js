@@ -7,7 +7,7 @@ import { api } from '../utils/api.js';
 const BATCH_MS = 40;
 const MAX_IDS = 200;
 
-export const useTagStore = create(() => ({ byMessage: {} }));
+export const useTagStore = create(() => ({ byMessage: {}, definitionsRevision: 0 }));
 
 let wanted = new Set();
 let timer = null;
@@ -67,3 +67,9 @@ export function useTagCounts(ids) {
   useEffect(() => { ids.forEach(requestTags); }, [ids.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
   return countTags(ids, byMessage);
 }
+
+// The list of tag definitions (created, renamed, deleted...) is fetched by several screens at once: the
+// settings, the filter bar, the pickers and plugins. After a change, call bumpTagDefinitions(); every
+// screen that depends on useTagDefinitionsRevision() then reloads, so none shows a stale list.
+export const bumpTagDefinitions = () => useTagStore.setState((s) => ({ definitionsRevision: s.definitionsRevision + 1 }));
+export const useTagDefinitionsRevision = () => useTagStore((s) => s.definitionsRevision);

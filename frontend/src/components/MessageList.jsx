@@ -3409,6 +3409,8 @@ export default function MessageList() {
         </div>
       )}
 
+      <PluginSlot name="message-list-filters" ctx={{ folder: selectedFolder }} />
+
       {/* Message list */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <div

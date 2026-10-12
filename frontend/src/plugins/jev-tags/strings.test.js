@@ -7,7 +7,7 @@ import { translate } from './strings.js';
 // translation fails here instead of rendering the raw key.
 const sources = ['TagPills.jsx', 'JevTagsSettings.jsx'].map((f) => readFileSync(new URL(f, import.meta.url), 'utf8')).join('\n');
 const used = new Set([...sources.matchAll(/\bt\(\s*'([a-z]+\.[A-Za-z]+)'/g)].map((m) => m[1]));
-for (const m of sources.matchAll(/'((?:conn|tags|header|acc|source|settings|pill)\.[A-Za-z]+)'/g)) used.add(m[1]);
+for (const m of sources.matchAll(/'((?:conn|tags|header|acc|source|settings|pill|filter)\.[A-Za-z]+)'/g)) used.add(m[1]);
 
 describe('jev-tags strings', () => {
   it('has an English and a French text for every key the UI uses', () => {

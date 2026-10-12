@@ -68,3 +68,20 @@ export function registerCollector(name, contribution) {
 export function getCollectors(name) {
   return collectors.get(name) || [];
 }
+
+// Extra query parameters a plugin adds to every message-list request (e.g. Jev tags' `tag` filter).
+// Each provider is `() => object` and must return {} itself when its plugin is not activated or the
+// filter is off; api.getMessages merges what they return. Core stays plugin-agnostic.
+const listParamProviders = []; // [{ pluginId, provide }]
+
+export function registerListParams(pluginId, provide) {
+  listParamProviders.push({ pluginId, provide });
+}
+
+export function getListParams() {
+  const out = {};
+  for (const { provide } of listParamProviders) {
+    try { Object.assign(out, provide() || {}); } catch { /* a faulty provider adds nothing */ }
+  }
+  return out;
+}

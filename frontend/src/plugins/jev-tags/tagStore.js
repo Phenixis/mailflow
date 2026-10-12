@@ -6,7 +6,7 @@ import { api } from '../../utils/api.js';
 const BATCH_MS = 40;
 const MAX_IDS = 200;
 
-export const useTagStore = create(() => ({ byMessage: {} }));
+export const useTagStore = create(() => ({ byMessage: {}, activeFilter: null }));
 
 let wanted = new Set();
 let timer = null;

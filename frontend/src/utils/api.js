@@ -1,3 +1,5 @@
+import { getListParams } from '../plugins/registry.js';
+
 const BASE = '/api';
 
 // Sent on every /api request so the backend CSRF guard accepts it. A cross-site
@@ -308,7 +310,7 @@ export const api = {
 
   // Mail
   getMessages: (params) => {
-    const qs = new URLSearchParams(params).toString();
+    const qs = new URLSearchParams({ ...params, ...getListParams() }).toString();
     return request('GET', `/mail/messages?${qs}`);
   },
   getMessage: (id) => request('GET', `/mail/messages/${id}`),

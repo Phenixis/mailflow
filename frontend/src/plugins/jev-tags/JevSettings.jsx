@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../../utils/api.js';
+import { bumpTagDefinitions, useTagDefinitionsRevision } from '../../tags/tagStore.js';
 import { useTranslation } from 'react-i18next';
 
 const card = { border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', background: 'var(--bg-secondary)', marginTop: 12 };
@@ -168,7 +169,7 @@ function QuestionEditor({ item, onChanged }) {
 function Questions({ items, reload }) {
   const { t } = useTranslation();
   const [msg, setMsg] = useState(null);
-  const defaults = async () => { try { await api.jevDefaults(); setMsg({ type: 'ok', text: t('jevTags.q.created') }); reload(); } catch (e) { setMsg({ type: 'error', text: e.message }); } };
+  const defaults = async () => { try { await api.jevDefaults(); setMsg({ type: 'ok', text: t('jevTags.q.created') }); bumpTagDefinitions(); } catch (e) { setMsg({ type: 'error', text: e.message }); } };
   return (
     <div style={card}>
       <div style={{ fontWeight: 600, fontSize: 13 }}>{t('jevTags.q.title')}</div>
@@ -183,8 +184,10 @@ function Questions({ items, reload }) {
 export default function JevSettings() {
   const { t } = useTranslation();
   const [items, setItems] = useState([]);
+  // Reloaded when a tag is created, renamed or deleted elsewhere (the Tags settings), not only on open.
+  const revision = useTagDefinitionsRevision();
   const reload = useCallback(() => { api.jevQuestions().then(setItems).catch(() => {}); }, []);
-  useEffect(reload, [reload]);
+  useEffect(reload, [reload, revision]);
   return (
     <div style={{ marginTop: 20 }}>
       <div style={{ fontWeight: 700, fontSize: 15 }}>{t('jevTags.conn.title')}</div>

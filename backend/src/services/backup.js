@@ -32,6 +32,7 @@ export const SETUP_TABLES = [
   'inbox_rules',
   'integration_config',
   'invites',
+  'message_tags',
   'oidc_providers',
   'plugin_account_config',
   'plugin_data',
@@ -51,8 +52,7 @@ export const SETUP_TABLES = [
   'users',
 ];
 // The local copy of the mail on the IMAP servers. Synced again after a restore that leaves it out.
-// message_tags hangs off messages (the tags on each message), so it travels with them.
-export const MAIL_CACHE_TABLES = ['folders', 'message_tags', 'messages', 'unfetchable_uids'];
+export const MAIL_CACHE_TABLES = ['folders', 'messages', 'unfetchable_uids'];
 // Short-lived tokens that are worthless minutes later, and API tokens: a restore must never
 // bring back a token revoked after the backup was taken. A restore also truncates users with
 // CASCADE, so it deletes every API token there is, and their owners have to create new ones.

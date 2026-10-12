@@ -181,7 +181,7 @@ function notifyMailMutation(rows, userId) {
 
 // Get messages (unified or per-account/folder)
 router.get('/messages', async (req, res) => {
-  const { accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category, sort, dir, starredFirst } = req.query;
+  const { accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category, sort, dir, starredFirst, tag } = req.query;
 
   if (!isValidFolderName(folder)) return res.status(400).json({ error: 'Invalid folder name' });
   if (sort !== undefined && !LIST_SORTS.includes(sort)) return res.status(400).json({ error: 'Invalid sort' });
@@ -204,6 +204,7 @@ router.get('/messages', async (req, res) => {
     sort,
     dir,
     starredFirst,
+    tag,
   });
 
   if (resolvedAccountId && messages.length) {

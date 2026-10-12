@@ -1959,5 +1959,44 @@
     "trash": "Papierkorb",
     "spam": "Spam",
     "archive": "Archiv"
+  },
+  "tags": {
+    "title": "Tags",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "manuell gesetzt",
+      "auto": "hinzugefügt von {{source}}"
+    },
+    "header": {
+      "hide": "Tags ausblenden",
+      "none": "Noch keine Tags definiert. Erstellen Sie welche in den Einstellungen."
+    },
+    "filter": {
+      "all": "Alle E-Mails",
+      "label": "Tag-Filter",
+      "modeAny": "mindestens eines",
+      "modeAll": "alle",
+      "modeHint": "E-Mails mit mindestens einem der gewählten Tags anzeigen oder nur E-Mails mit allen"
+    },
+    "picker": {
+      "count": "{{n}} von {{total}}"
+    },
+    "toast": {
+      "added": "Tag „{{name}}“ zu {{n}} Nachricht(en) hinzugefügt",
+      "removed": "Tag „{{name}}“ von {{n}} Nachricht(en) entfernt",
+      "failed": "Tag konnte nicht aktualisiert werden: {{error}}"
+    },
+    "settings": {
+      "note": "Tags werden nur in MailFlow gespeichert; auf Ihren Mailservern wird nichts geschrieben.",
+      "name": "Name",
+      "color": "Farbe",
+      "key": "Schlüssel (Kleinbuchstaben, Ziffern, _)",
+      "on": "aktiv",
+      "confirmDelete": "Tag „{{name}}“ löschen und von allen Nachrichten entfernen?",
+      "add": "Tag hinzufügen",
+      "create": "Erstellen"
+    }
   }
 }

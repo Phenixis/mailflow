@@ -4,15 +4,12 @@ import { registerHooks } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import { transform } from 'sucrase';
+import { reactI18nextMockSource } from './i18nTestSupport.js';
 
 registerHooks({
   load(url, context, nextLoad) {
     if (url.endsWith('react-i18next/dist/es/index.js') || url.endsWith('/react-i18next')) {
-      return { format: 'module', shortCircuit: true, source: [
-        'export const useTranslation = () => ({ t: (k) => k, i18n: { language: "en", changeLanguage: () => {} } });',
-        'export const initReactI18next = { type: "3rdParty", init: () => {} };',
-        'export default { useTranslation, initReactI18next };',
-      ].join('\n') };
+      return { format: 'module', shortCircuit: true, source: reactI18nextMockSource() };
     }
     if (url.endsWith('.json')) {
       return { format: 'module', shortCircuit: true, source: `export default ${readFileSync(new URL(url), 'utf8')}` };

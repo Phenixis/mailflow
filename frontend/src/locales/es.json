@@ -1959,5 +1959,44 @@
     "trash": "Papelera",
     "spam": "Spam",
     "archive": "Archivo"
+  },
+  "tags": {
+    "title": "Etiquetas",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "puesta a mano",
+      "auto": "añadida por {{source}}"
+    },
+    "header": {
+      "hide": "Ocultar etiquetas",
+      "none": "Aún no hay etiquetas. Crea algunas en Ajustes."
+    },
+    "filter": {
+      "all": "Todo el correo",
+      "label": "Filtro de etiquetas",
+      "modeAny": "cualquiera",
+      "modeAll": "todas",
+      "modeHint": "Mostrar el correo con cualquiera de las etiquetas elegidas, o solo el que las tiene todas"
+    },
+    "picker": {
+      "count": "{{n}} de {{total}}"
+    },
+    "toast": {
+      "added": "Etiqueta «{{name}}» añadida a {{n}} mensaje(s)",
+      "removed": "Etiqueta «{{name}}» quitada de {{n}} mensaje(s)",
+      "failed": "No se pudo actualizar la etiqueta: {{error}}"
+    },
+    "settings": {
+      "note": "Las etiquetas se guardan solo en MailFlow; no se escribe nada en tus servidores de correo.",
+      "name": "Nombre",
+      "color": "Color",
+      "key": "Clave (minúsculas, dígitos, _)",
+      "on": "activa",
+      "confirmDelete": "¿Eliminar la etiqueta «{{name}}» y quitarla de todos los mensajes?",
+      "add": "Añadir una etiqueta",
+      "create": "Crear"
+    }
   }
 }

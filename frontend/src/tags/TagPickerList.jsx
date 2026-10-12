@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../utils/api.js';
-import { useMessageTags, invalidateTags } from './tagStore.js';
+import { useMessageTags, useTagCounts, invalidateTags } from './tagStore.js';
+import { useStore } from '../store/index.js';
 import { useT } from './strings.js';
 
 // The user's tags as a list to put on or take off the given messages. One message: a checkbox per
@@ -12,11 +13,22 @@ export default function TagPickerList({ messageIds, hotkeys = false }) {
   const [error, setError] = useState(null);
   const single = messageIds.length === 1;
   const current = useMessageTags(messageIds[0]);
+  const counts = useTagCounts(messageIds);
 
   useEffect(() => { api.tagDefinitions().then((d) => setDefs(d.filter((x) => x.enabled))).catch((e) => setError(e.message)); }, []);
 
+  // Several messages get a toast saying what changed (the checkbox is feedback enough for one).
+  const notify = (title, type) => useStore.getState().addNotification({ type, title, body: '' });
   const apply = async (def, on) => {
-    try { await api.tagBulk(messageIds, def.id, on); invalidateTags(messageIds); setError(null); } catch (e) { setError(e.message); }
+    try {
+      const { updated } = await api.tagBulk(messageIds, def.id, on);
+      invalidateTags(messageIds);
+      setError(null);
+      if (!single) notify(t(on ? 'toast.added' : 'toast.removed', { name: def.name, n: updated }));
+    } catch (e) {
+      setError(e.message);
+      notify(t('toast.failed', { error: e.message }), 'error');
+    }
   };
 
   useEffect(() => {
@@ -53,7 +65,12 @@ export default function TagPickerList({ messageIds, hotkeys = false }) {
             ) : (
               <>
                 <span style={{ width: 9, height: 9, borderRadius: 3, background: def.color }} />
-                <span style={{ flex: 1 }}>{def.name}</span>
+                <span style={{ flex: 1 }}>
+                  {def.name}
+                  <span style={{ marginLeft: 6, fontSize: 11, color: counts[def.id] ? 'var(--accent)' : 'var(--text-tertiary)' }}>
+                    {t('picker.count', { n: counts[def.id] || 0, total: messageIds.length })}
+                  </span>
+                </span>
                 <button style={small} onClick={() => apply(def, true)}>{t('picker.add')}</button>
                 <button style={small} onClick={() => apply(def, false)}>{t('picker.remove')}</button>
               </>

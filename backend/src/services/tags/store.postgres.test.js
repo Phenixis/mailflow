@@ -28,7 +28,7 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store (PostgreSQL
       CREATE TABLE users (id uuid PRIMARY KEY);
       CREATE TABLE email_accounts (id uuid PRIMARY KEY, user_id uuid REFERENCES users(id));
       CREATE TABLE messages (id uuid PRIMARY KEY, account_id uuid REFERENCES email_accounts(id), folder text,
-        date timestamptz, is_deleted boolean DEFAULT false, plugin_annotations jsonb NOT NULL DEFAULT '{}');
+        date timestamptz, subject text, from_name text, is_deleted boolean DEFAULT false, plugin_annotations jsonb NOT NULL DEFAULT '{}');
       INSERT INTO users VALUES ('${U1}'), ('${U2}');
       INSERT INTO email_accounts VALUES ('${A1}', '${U1}'), ('${A2}', '${U2}');
       INSERT INTO messages (id, account_id, folder, date) VALUES ('${M1}', '${A1}', 'INBOX', now()), ('${M2}', '${A2}', 'INBOX', now())`);
@@ -115,6 +115,31 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store (PostgreSQL
     expect(await store.removeTag(U2, M2, 'urgent', 'jev-tags')).toBe(true);
     expect(await store.tagsForMessages(U2, [M2])).toEqual({});
     expect(await store.applyTag(U2, M2, 'urgent', 'jev-tags')).toBe('applied'); // not dismissed, so it can return
+  });
+
+  it('gives examples from how the user tagged, leaving out messages carrying an excluded tag', async () => {
+    await db.query(`INSERT INTO messages (id, account_id, folder, date, subject, from_name) VALUES
+      ('00000000-0000-4000-8000-0000000000c1', '${A1}', 'INBOX', now(), 'Flight to Rome', 'Airline'),
+      ('00000000-0000-4000-8000-0000000000c2', '${A1}', 'INBOX', now(), 'Secret flight', 'Airline'),
+      ('00000000-0000-4000-8000-0000000000c3', '${A1}', 'INBOX', now(), 'Newsletter', 'News'),
+      ('00000000-0000-4000-8000-0000000000c4', '${A1}', 'INBOX', now(), '', 'No subject')`);
+    const trip = await store.createDefinition(U1, { key: 'trips', name: 'Trips' });
+    const secret = await store.createDefinition(U1, { key: 'secret', name: 'Secret' });
+    const c = (n) => `00000000-0000-4000-8000-0000000000c${n}`;
+    await store.setManualTags(U1, [c(1), c(2), c(4)], trip.id, true);
+    await store.setManualTags(U1, [c(3)], trip.id, false); // the user said "not a trip"
+    await store.setManualTags(U1, [c(2)], secret.id, true);
+    await store.applyTag(U1, c(3), 'secret', 'jev-tags'); // an automatic tag is not "the user's own"
+    const all = await store.listTagExamples(U1, 'trips');
+    expect(all.positives.map((e) => e.subject).sort()).toEqual(['Flight to Rome', 'Secret flight']); // empty subject skipped
+    expect(all.negatives).toEqual([{ subject: 'Newsletter', sender: 'News' }]);
+    const safe = await store.listTagExamples(U1, 'trips', { excludeIfTagged: ['secret'] });
+    expect(safe.positives).toEqual([{ subject: 'Flight to Rome', sender: 'Airline' }]);
+    expect((await store.listTagExamples(U1, 'trips', { limit: 1 })).positives).toHaveLength(1);
+    expect(await store.listTagExamples(U2, 'trips')).toEqual({ positives: [], negatives: [] });
+    await store.deleteDefinition(U1, trip.id);
+    await store.deleteDefinition(U1, secret.id);
+    await db.query("DELETE FROM messages WHERE id::text LIKE '00000000-0000-4000-8000-0000000000c%'");
   });
 
   it('lists INBOX messages, optionally only those a plugin has not annotated', async () => {

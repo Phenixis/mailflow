@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import TagPickerList from './TagPickerList.jsx';
+import { useMobile } from '../hooks/useMobile.js';
 import { useT } from './strings.js';
 
 // The "Tags" button of the bulk-selection toolbar. `Btn` is the toolbar's own button component, so
@@ -7,6 +8,11 @@ import { useT } from './strings.js';
 export default function TagBulkButton({ ids, Btn }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const isMobile = useMobile();
+  // A phone gets a bottom sheet (an absolute popover under a small button runs off the screen).
+  const panel = isMobile
+    ? { position: 'fixed', left: 8, right: 8, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)', maxHeight: '60vh' }
+    : { position: 'absolute', top: '100%', right: 0, minWidth: 240, maxHeight: 320 };
   return (
     <div style={{ position: 'relative' }}>
       <Btn title={t('menu.tags')} onClick={() => setOpen(!open)}>
@@ -19,7 +25,7 @@ export default function TagBulkButton({ ids, Btn }) {
         <>
           <div onClick={() => setOpen(false)} aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
           <div style={{
-            position: 'absolute', top: '100%', right: 0, zIndex: 1000, minWidth: 240, maxHeight: 320, overflowY: 'auto',
+            ...panel, zIndex: 1000, overflowY: 'auto',
             background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: 'var(--shadow-popover)',
           }}>
             <TagPickerList messageIds={ids} />

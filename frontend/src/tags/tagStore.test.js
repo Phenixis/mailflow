@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { api } from '../utils/api.js';
-import { useTagStore, requestTags, invalidateTags, clearTagCache } from './tagStore.js';
+import { useTagStore, requestTags, invalidateTags, clearTagCache, countTags } from './tagStore.js';
 
 const wait = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 const tag = (key) => ({ tagId: `t-${key}`, key, name: key, color: '#000000', source: 'manual' });
@@ -43,5 +43,13 @@ describe('tag cache', () => {
     requestTags('x');
     await wait();
     assert.deepEqual(useTagStore.getState().byMessage.x, []);
+  });
+});
+
+describe('countTags', () => {
+  it('counts how many of the given messages carry each tag, ignoring messages not loaded yet', () => {
+    const byMessage = { a: [{ tagId: 't1' }, { tagId: 't2' }], b: [{ tagId: 't1' }], c: [] };
+    assert.deepEqual(countTags(['a', 'b', 'c', 'unknown'], byMessage), { t1: 2, t2: 1 });
+    assert.deepEqual(countTags([], byMessage), {});
   });
 });

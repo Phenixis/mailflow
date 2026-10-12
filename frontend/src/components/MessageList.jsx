@@ -5162,6 +5162,7 @@ function MessageRow({ message, selected, lastViewed, isChecked, selectionMode, s
           <PluginSlot name="message-row-meta" ctx={{ message }} />
           <ReplyDraftIndicator message={message} listRow />
           <SpamBadge message={message} onClick={onExplainSpam} />
+          <RowTagPills message={message} />
         </div>
 
         {/* Row 3: Snippet */}

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../../utils/api.js';
-import { useT } from './strings.js';
+import { useTranslation } from 'react-i18next';
 
 const card = { border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', background: 'var(--bg-secondary)', marginTop: 12 };
 const label = { fontSize: 11, color: 'var(--text-tertiary)', display: 'block', margin: '8px 0 3px' };
@@ -14,7 +14,7 @@ function Message({ msg }) {
 }
 
 function Connection({ tags }) {
-  const t = useT();
+  const { t } = useTranslation();
   const [s, setS] = useState(null);
   const [key, setKey] = useState('');
   const [msg, setMsg] = useState(null);
@@ -34,32 +34,32 @@ function Connection({ tags }) {
 
   return (
     <div style={card}>
-      <div style={{ fontWeight: 600, fontSize: 13 }}>{t('conn.title')}</div>
+      <div style={{ fontWeight: 600, fontSize: 13 }}>{t('jevTags.conn.title')}</div>
       <span style={label}>
-        {t('conn.keyLabel')} ({s.hasApiKey ? t(s.apiKeySource === 'env' ? 'conn.keyEnv' : 'conn.keySet') : t('conn.keyUnset')})
+        {t('jevTags.conn.keyLabel')} ({s.hasApiKey ? t(s.apiKeySource === 'env' ? 'jevTags.conn.keyEnv' : 'jevTags.conn.keySet') : t('jevTags.conn.keyUnset')})
       </span>
       <div style={{ display: 'flex', gap: 6 }}>
-        <input type="password" autoComplete="off" value={key} placeholder={s.hasApiKey ? t('conn.keyPlaceholderSet') : 'apikey_...'} style={input} onChange={(e) => setKey(e.target.value)} />
-        <button style={btn} disabled={!key} onClick={() => save({ apiKey: key }, t('conn.saved'))}>{t('conn.save')}</button>
-        {s.apiKeySource === 'ui' && <button style={btn} onClick={() => save({ apiKey: '' }, t('conn.removed'))}>{t('conn.remove')}</button>}
+        <input type="password" autoComplete="off" value={key} placeholder={s.hasApiKey ? t('jevTags.conn.keyPlaceholderSet') : 'apikey_...'} style={input} onChange={(e) => setKey(e.target.value)} />
+        <button style={btn} disabled={!key} onClick={() => save({ apiKey: key }, t('jevTags.conn.saved'))}>{t('common.save')}</button>
+        {s.apiKeySource === 'ui' && <button style={btn} onClick={() => save({ apiKey: '' }, t('jevTags.conn.removed'))}>{t('common.remove')}</button>}
       </div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
-        {num('threshold_low', 'conn.low')}
-        {num('threshold_high', 'conn.high')}
-        {num('private_above', 'conn.private')}
-        {num('max_body_chars', 'conn.body', 50)}
+        {num('threshold_low', 'jevTags.conn.low')}
+        {num('threshold_high', 'jevTags.conn.high')}
+        {num('private_above', 'jevTags.conn.private')}
+        {num('max_body_chars', 'jevTags.conn.body', 50)}
       </div>
-      <span style={label}>{t('conn.gate')}</span>
+      <span style={label}>{t('jevTags.conn.gate')}</span>
       <select value={s.privacyTagKey} style={input} onChange={(e) => setS({ ...s, privacyTagKey: e.target.value })}>
         {!tags.some((x) => x.key === s.privacyTagKey) && <option value={s.privacyTagKey}>{s.privacyTagKey}</option>}
         {tags.map((x) => <option key={x.key} value={x.key}>{x.name}</option>)}
       </select>
-      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 6 }}>{t('conn.privacyNote')}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 6 }}>{t('jevTags.conn.privacyNote')}</div>
       <button
         style={{ ...btn, marginTop: 8 }}
-        onClick={() => save({ threshold_low: s.threshold_low, threshold_high: s.threshold_high, private_above: s.private_above, max_body_chars: s.max_body_chars, privacyTagKey: s.privacyTagKey }, t('conn.settingsSaved'))}
+        onClick={() => save({ threshold_low: s.threshold_low, threshold_high: s.threshold_high, private_above: s.private_above, max_body_chars: s.max_body_chars, privacyTagKey: s.privacyTagKey }, t('jevTags.conn.settingsSaved'))}
       >
-        {t('conn.saveSettings')}
+        {t('jevTags.conn.saveSettings')}
       </button>
       <Message msg={msg} />
     </div>
@@ -67,7 +67,7 @@ function Connection({ tags }) {
 }
 
 function Accounts() {
-  const t = useT();
+  const { t } = useTranslation();
   const [accounts, setAccounts] = useState(null);
   const [msg, setMsg] = useState(null);
   useEffect(() => { api.jevAccounts().then(setAccounts).catch((e) => setMsg({ type: 'error', text: e.message })); }, []);
@@ -78,26 +78,26 @@ function Accounts() {
     } catch (e) { setMsg({ type: 'error', text: e.message }); }
   };
   const backfill = async (force) => {
-    try { const r = await api.jevBackfill(100, force); setMsg({ type: 'ok', text: t('acc.queued', { n: r.queued, a: r.accounts }) }); } catch (e) { setMsg({ type: 'error', text: e.message }); }
+    try { const r = await api.jevBackfill(100, force); setMsg({ type: 'ok', text: t('jevTags.acc.queued', { n: r.queued, a: r.accounts }) }); } catch (e) { setMsg({ type: 'error', text: e.message }); }
   };
   return (
     <div style={card}>
-      <div style={{ fontWeight: 600, fontSize: 13 }}>{t('acc.title')}</div>
-      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '4px 0 6px' }}>{t('acc.note')}</div>
+      <div style={{ fontWeight: 600, fontSize: 13 }}>{t('jevTags.acc.title')}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '4px 0 6px' }}>{t('jevTags.acc.note')}</div>
       {(accounts || []).map((a) => (
         <label key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, padding: '3px 0' }}>
           <input type="checkbox" checked={a.enabled} onChange={() => toggle(a)} /> {a.email}
         </label>
       ))}
-      <button style={{ ...btn, marginTop: 8 }} onClick={() => backfill(false)}>{t('acc.backfill')}</button>
-      <button style={{ ...btn, marginTop: 8, marginLeft: 8 }} onClick={() => backfill(true)}>{t('acc.reclassify')}</button>
+      <button style={{ ...btn, marginTop: 8 }} onClick={() => backfill(false)}>{t('jevTags.acc.backfill')}</button>
+      <button style={{ ...btn, marginTop: 8, marginLeft: 8 }} onClick={() => backfill(true)}>{t('jevTags.acc.reclassify')}</button>
       <Message msg={msg} />
     </div>
   );
 }
 
 function QuestionEditor({ item, onChanged }) {
-  const t = useT();
+  const { t } = useTranslation();
   const q = item.question;
   const on = Boolean(q) && q.enabled !== false;
   const [open, setOpen] = useState(false);
@@ -119,7 +119,7 @@ function QuestionEditor({ item, onChanged }) {
     if (await send({
       instructions: f.instructions, true_what: f.true_what || null, true_examples: lines(f.true_examples),
       false_what: f.false_what || null, false_examples: lines(f.false_examples), learn: f.learn, enabled: on || !q,
-    })) { setMsg({ type: 'ok', text: t('q.saved') }); setOpen(false); }
+    })) { setMsg({ type: 'ok', text: t('jevTags.q.saved') }); setOpen(false); }
   };
   const remove = async () => { try { await api.jevDeleteQuestion(item.key); setOpen(false); onChanged(); } catch (e) { setMsg({ type: 'error', text: e.message }); } };
   const field = (k, textKey, multiline, placeholder) => (
@@ -135,27 +135,27 @@ function QuestionEditor({ item, onChanged }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ width: 12, height: 12, borderRadius: 3, background: item.color }} />
         <span style={{ flex: 1, fontSize: 13, fontWeight: 600, opacity: on ? 1 : 0.6 }}>
-          {item.name}{!on && <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-tertiary)' }}> - {t('q.off')}</span>}
+          {item.name}{!on && <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-tertiary)' }}> - {t('jevTags.q.off')}</span>}
         </span>
         <label style={{ fontSize: 11, display: 'flex', gap: 4, alignItems: 'center' }}>
-          <input type="checkbox" checked={on} onChange={toggle} /> {t('q.toggle')}
+          <input type="checkbox" checked={on} onChange={toggle} /> {t('jevTags.q.toggle')}
         </label>
-        <button style={btn} onClick={() => (open ? setOpen(false) : start())}>{open ? t('q.close') : t('q.edit')}</button>
+        <button style={btn} onClick={() => (open ? setOpen(false) : start())}>{open ? t('admin.close') : t('common.edit')}</button>
       </div>
       {open && f && (
         <div>
-          {field('instructions', 'q.question', true, item.defaultInstructions)}
-          {field('true_what', 'q.yesMeans')}
-          {field('true_examples', 'q.yesExamples', true)}
-          {field('false_what', 'q.noMeans')}
-          {field('false_examples', 'q.noExamples', true)}
+          {field('instructions', 'jevTags.q.question', true, item.defaultInstructions)}
+          {field('true_what', 'jevTags.q.yesMeans')}
+          {field('true_examples', 'jevTags.q.yesExamples', true)}
+          {field('false_what', 'jevTags.q.noMeans')}
+          {field('false_examples', 'jevTags.q.noExamples', true)}
           <label style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center', marginTop: 8 }}>
-            <input type="checkbox" checked={f.learn} onChange={() => setF({ ...f, learn: !f.learn })} /> {t('q.learn')}
+            <input type="checkbox" checked={f.learn} onChange={() => setF({ ...f, learn: !f.learn })} /> {t('jevTags.q.learn')}
           </label>
-          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{t('q.learnNote')}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{t('jevTags.q.learnNote')}</div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button style={btn} onClick={save}>{t('q.save')}</button>
-            {q && <button style={{ ...btn, color: 'var(--red, #ef4444)' }} onClick={remove}>{t('q.remove')}</button>}
+            <button style={btn} onClick={save}>{t('jevTags.q.save')}</button>
+            {q && <button style={{ ...btn, color: 'var(--red, #ef4444)' }} onClick={remove}>{t('jevTags.q.remove')}</button>}
           </div>
         </div>
       )}
@@ -165,28 +165,28 @@ function QuestionEditor({ item, onChanged }) {
 }
 
 function Questions({ items, reload }) {
-  const t = useT();
+  const { t } = useTranslation();
   const [msg, setMsg] = useState(null);
-  const defaults = async () => { try { await api.jevDefaults(); setMsg({ type: 'ok', text: t('q.created') }); reload(); } catch (e) { setMsg({ type: 'error', text: e.message }); } };
+  const defaults = async () => { try { await api.jevDefaults(); setMsg({ type: 'ok', text: t('jevTags.q.created') }); reload(); } catch (e) { setMsg({ type: 'error', text: e.message }); } };
   return (
     <div style={card}>
-      <div style={{ fontWeight: 600, fontSize: 13 }}>{t('q.title')}</div>
-      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '4px 0' }}>{t('q.note')}</div>
+      <div style={{ fontWeight: 600, fontSize: 13 }}>{t('jevTags.q.title')}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '4px 0' }}>{t('jevTags.q.note')}</div>
       {items.map((item) => <QuestionEditor key={item.key} item={item} onChanged={reload} />)}
-      <button style={{ ...btn, marginTop: 8 }} onClick={defaults}>{t('q.defaults')}</button>
+      <button style={{ ...btn, marginTop: 8 }} onClick={defaults}>{t('jevTags.q.defaults')}</button>
       <Message msg={msg} />
     </div>
   );
 }
 
 export default function JevSettings() {
-  const t = useT();
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const reload = useCallback(() => { api.jevQuestions().then(setItems).catch(() => {}); }, []);
   useEffect(reload, [reload]);
   return (
     <div style={{ marginTop: 20 }}>
-      <div style={{ fontWeight: 700, fontSize: 15 }}>{t('conn.title')}</div>
+      <div style={{ fontWeight: 700, fontSize: 15 }}>{t('jevTags.conn.title')}</div>
       <Connection tags={items} />
       <Accounts />
       <Questions items={items} reload={reload} />

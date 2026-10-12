@@ -10,7 +10,7 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock('../api.js', () => api);
 
-import { loadSettings, saveSettings, loadQuestions, saveQuestion, removeQuestion, ensureDefaults, activeEntries } from './config.js';
+import { loadSettings, saveSettings, loadQuestions, saveQuestion, removeQuestion, ensureDefaults, activeEntries, defaultInstructions } from './config.js';
 import { DEFAULT_TAGS } from './defaults.js';
 
 beforeEach(() => {
@@ -76,5 +76,15 @@ describe('questions and defaults', () => {
     await saveQuestion('u1', 'b', { instructions: 'qb', enabled: true });
     await saveQuestion('u1', 'c', { instructions: 'qc', enabled: false });
     expect((await activeEntries('u1')).map((e) => e.key)).toEqual(['a']);
+  });
+
+  it('gives a tag switched on without written instructions the default question built from its name', async () => {
+    api.listTagDefinitions.mockResolvedValue([{ key: 'travel', name: 'Travel', enabled: true }, { key: 'urgent', name: 'Urgent', enabled: true }]);
+    await saveQuestion('u1', 'travel', { instructions: '   ', enabled: true });
+    await saveQuestion('u1', 'urgent', { instructions: 'my own question', enabled: true });
+    const entries = await activeEntries('u1');
+    expect(entries.find((e) => e.key === 'travel').question.instructions).toBe(defaultInstructions('Travel'));
+    expect(defaultInstructions('Travel')).toBe('The message belongs under the tag "Travel".');
+    expect(entries.find((e) => e.key === 'urgent').question.instructions).toBe('my own question');
   });
 });

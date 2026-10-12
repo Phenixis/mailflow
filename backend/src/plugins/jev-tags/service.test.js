@@ -7,6 +7,8 @@ const api = vi.hoisted(() => ({
 vi.mock('../api.js', () => api);
 const cfg = vi.hoisted(() => ({ loadSettings: vi.fn(), activeEntries: vi.fn() }));
 vi.mock('./config.js', () => cfg);
+const examples = vi.hoisted(() => ({ withLearnedExamples: vi.fn(async (_u, entries) => entries) }));
+vi.mock('./examples.js', () => examples);
 
 import { classifyMessage } from './service.js';
 import { JevError } from './jevClient.js';
@@ -26,6 +28,15 @@ beforeEach(() => {
 });
 
 describe('classifyMessage', () => {
+  it('asks Jev with the examples learned from the user\'s own tagging', async () => {
+    examples.withLearnedExamples.mockImplementationOnce(async (_u, list) => list.map((e) => (
+      e.key === 'urgent' ? { ...e, question: { ...e.question, true_examples: ['Flight tomorrow — Airline'] } } : e)));
+    const askImpl = scoresAsk({});
+    await classifyMessage('u1', 'm1', { askImpl, today: '2026-10-12' });
+    expect(examples.withLearnedExamples).toHaveBeenCalledWith('u1', entries, 'private');
+    expect(askImpl.mock.calls[0][0].questions.urgent.criteria.true.examples).toEqual(['Flight tomorrow — Airline']);
+  });
+
   it('applies the tags Jev says yes to, takes back the others, and keeps the answers on the message', async () => {
     const askImpl = scoresAsk({ important: 0.9 });
     const out = await classifyMessage('u1', 'm1', { askImpl, today: '2026-10-12' });

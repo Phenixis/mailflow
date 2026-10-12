@@ -6,7 +6,7 @@ import {
   listTagDefinitions, listInboxMessageIds,
 } from '../api.js';
 import { PLUGIN_ID } from './defaults.js';
-import { loadSettings, saveSettings, loadQuestions, saveQuestion, removeQuestion, ensureDefaults } from './config.js';
+import { loadSettings, saveSettings, loadQuestions, saveQuestion, removeQuestion, ensureDefaults, defaultInstructions } from './config.js';
 import { jevQueue } from './queue.js';
 
 const router = Router();
@@ -52,11 +52,14 @@ router.put('/settings', async (req, res) => {
 // Every tag the user has, with the question Jev answers for it (null = not classified by Jev).
 router.get('/questions', async (req, res) => {
   const [defs, questions] = await Promise.all([listTagDefinitions(req.session.userId), loadQuestions(req.session.userId)]);
-  res.json(defs.map((d) => ({ key: d.key, name: d.name, color: d.color, tagEnabled: d.enabled, question: questions[d.key] ?? null })));
+  res.json(defs.map((d) => ({
+    key: d.key, name: d.name, color: d.color, tagEnabled: d.enabled, question: questions[d.key] ?? null,
+    defaultInstructions: defaultInstructions(d.name),
+  })));
 });
 
 function validateQuestion(b) {
-  if (typeof b.instructions !== 'string' || !b.instructions.trim() || b.instructions.length > 2000) return 'instructions is required (up to 2000 characters)';
+  if ('instructions' in b && (typeof b.instructions !== 'string' || b.instructions.length > 2000)) return 'instructions must be text of up to 2000 characters';
   for (const f of ['true_what', 'false_what']) {
     if (f in b && b[f] !== null && (typeof b[f] !== 'string' || b[f].length > 500)) return `${f} is invalid`;
   }
@@ -66,7 +69,9 @@ function validateQuestion(b) {
   for (const f of ['threshold_low', 'threshold_high']) {
     if (f in b && b[f] !== null && !isProb(b[f])) return `${f} must be between 0 and 1`;
   }
-  if ('enabled' in b && typeof b.enabled !== 'boolean') return 'enabled must be a boolean';
+  for (const f of ['enabled', 'learn']) {
+    if (f in b && typeof b[f] !== 'boolean') return `${f} must be a boolean`;
+  }
   return null;
 }
 
@@ -78,11 +83,12 @@ router.put('/questions/:key', async (req, res) => {
   const defs = await listTagDefinitions(req.session.userId);
   if (!defs.some((d) => d.key === req.params.key)) return res.status(404).json({ error: 'Tag not found' });
   const question = {
-    instructions: b.instructions.trim(),
+    instructions: (b.instructions ?? '').trim(), // empty = the default question built from the tag's name
     true_what: b.true_what ?? null, true_examples: b.true_examples ?? [],
     false_what: b.false_what ?? null, false_examples: b.false_examples ?? [],
     threshold_low: b.threshold_low ?? null, threshold_high: b.threshold_high ?? null,
     enabled: b.enabled ?? true,
+    learn: b.learn ?? true, // also use the mail the user tagged by hand as examples
   };
   await saveQuestion(req.session.userId, req.params.key, question);
   res.json({ key: req.params.key, question });

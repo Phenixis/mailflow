@@ -58,10 +58,18 @@ export async function ensureDefaults(userId) {
   await storage.put(PLUGIN_ID, questionsKey(userId), { value: all, ownerId: userId });
 }
 
-// The tags to ask Jev about: the user's tags (enabled) that have an enabled question.
+// The question for a tag nobody wrote one for: a plain statement built from the tag's name. Jev
+// reads it together with the examples (hand-written and learned from the user's own tagging).
+export const defaultInstructions = (name) => `The message belongs under the tag "${name}".`;
+
+// The tags to ask Jev about: the user's tags (enabled) that Jev is switched on for. A tag with no
+// written instructions gets the default question built from its name.
 export async function activeEntries(userId) {
   const [defs, questions] = await Promise.all([listTagDefinitions(userId), loadQuestions(userId)]);
   return defs
     .filter((d) => d.enabled && questions[d.key] && questions[d.key].enabled !== false)
-    .map((d) => ({ key: d.key, name: d.name, question: questions[d.key] }));
+    .map((d) => {
+      const q = questions[d.key];
+      return { key: d.key, name: d.name, question: { ...q, instructions: q.instructions?.trim() ? q.instructions : defaultInstructions(d.name) } };
+    });
 }

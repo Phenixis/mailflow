@@ -6,6 +6,7 @@ import {
 import { askJev, JevError } from './jevClient.js';
 import { classify } from './classifier.js';
 import { loadSettings, activeEntries } from './config.js';
+import { withLearnedExamples } from './examples.js';
 import { PLUGIN_ID } from './defaults.js';
 
 const nowIso = () => new Date().toISOString();
@@ -22,7 +23,7 @@ export async function classifyMessage(userId, messageId, { askImpl = askJev, tod
   if (!entries.length) return { status: 'no-tags' };
   try {
     const outcome = await classify({
-      message, entries, privacyKey: settings.privacyTagKey, settings, today,
+      message, entries: await withLearnedExamples(userId, entries, settings.privacyTagKey), privacyKey: settings.privacyTagKey, settings, today,
       ask: (state, questions) => askImpl({ apiKey: settings.apiKey, model: settings.model, state, questions }),
     });
     const answers = {};

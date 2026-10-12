@@ -99,31 +99,34 @@ function Accounts() {
 function QuestionEditor({ item, onChanged }) {
   const t = useT();
   const q = item.question;
+  const on = Boolean(q) && q.enabled !== false;
   const [open, setOpen] = useState(false);
   const [f, setF] = useState(null);
   const [msg, setMsg] = useState(null);
   const start = () => {
     setF({
       instructions: q?.instructions || '', true_what: q?.true_what || '', true_examples: (q?.true_examples || []).join('\n'),
-      false_what: q?.false_what || '', false_examples: (q?.false_examples || []).join('\n'), enabled: q ? q.enabled !== false : true,
+      false_what: q?.false_what || '', false_examples: (q?.false_examples || []).join('\n'), learn: q ? q.learn !== false : true,
     });
     setOpen(true);
   };
+  const send = async (body) => {
+    try { await api.jevSaveQuestion(item.key, body); setMsg(null); onChanged(); return true; } catch (e) { setMsg({ type: 'error', text: e.message }); return false; }
+  };
+  // The row switch: turn Jev on or off for this tag without opening the editor.
+  const toggle = () => send(q ? { ...q, enabled: !on } : { instructions: '', enabled: true });
   const save = async () => {
-    try {
-      await api.jevSaveQuestion(item.key, {
-        instructions: f.instructions, true_what: f.true_what || null, true_examples: lines(f.true_examples),
-        false_what: f.false_what || null, false_examples: lines(f.false_examples), enabled: f.enabled,
-      });
-      setMsg({ type: 'ok', text: t('q.saved') }); setOpen(false); onChanged();
-    } catch (e) { setMsg({ type: 'error', text: e.message }); }
+    if (await send({
+      instructions: f.instructions, true_what: f.true_what || null, true_examples: lines(f.true_examples),
+      false_what: f.false_what || null, false_examples: lines(f.false_examples), learn: f.learn, enabled: on || !q,
+    })) { setMsg({ type: 'ok', text: t('q.saved') }); setOpen(false); }
   };
   const remove = async () => { try { await api.jevDeleteQuestion(item.key); setOpen(false); onChanged(); } catch (e) { setMsg({ type: 'error', text: e.message }); } };
-  const field = (k, textKey, multiline) => (
+  const field = (k, textKey, multiline, placeholder) => (
     <>
       <span style={label}>{t(textKey)}</span>
       {multiline
-        ? <textarea rows={k.endsWith('examples') ? 4 : 3} value={f[k]} style={input} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
+        ? <textarea rows={k.endsWith('examples') ? 4 : 3} value={f[k]} placeholder={placeholder} style={input} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
         : <input value={f[k]} style={input} onChange={(e) => setF({ ...f, [k]: e.target.value })} />}
     </>
   );
@@ -131,21 +134,25 @@ function QuestionEditor({ item, onChanged }) {
     <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ width: 12, height: 12, borderRadius: 3, background: item.color }} />
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, opacity: q ? 1 : 0.6 }}>
-          {item.name}{!q && <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-tertiary)' }}> - {t('q.off')}</span>}
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, opacity: on ? 1 : 0.6 }}>
+          {item.name}{!on && <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-tertiary)' }}> - {t('q.off')}</span>}
         </span>
+        <label style={{ fontSize: 11, display: 'flex', gap: 4, alignItems: 'center' }}>
+          <input type="checkbox" checked={on} onChange={toggle} /> {t('q.toggle')}
+        </label>
         <button style={btn} onClick={() => (open ? setOpen(false) : start())}>{open ? t('q.close') : t('q.edit')}</button>
       </div>
       {open && f && (
         <div>
-          <label style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center', marginTop: 8 }}>
-            <input type="checkbox" checked={f.enabled} onChange={() => setF({ ...f, enabled: !f.enabled })} /> {t('q.enabled')}
-          </label>
-          {field('instructions', 'q.question', true)}
+          {field('instructions', 'q.question', true, item.defaultInstructions)}
           {field('true_what', 'q.yesMeans')}
           {field('true_examples', 'q.yesExamples', true)}
           {field('false_what', 'q.noMeans')}
           {field('false_examples', 'q.noExamples', true)}
+          <label style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center', marginTop: 8 }}>
+            <input type="checkbox" checked={f.learn} onChange={() => setF({ ...f, learn: !f.learn })} /> {t('q.learn')}
+          </label>
+          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{t('q.learnNote')}</div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button style={btn} onClick={save}>{t('q.save')}</button>
             {q && <button style={{ ...btn, color: 'var(--red, #ef4444)' }} onClick={remove}>{t('q.remove')}</button>}

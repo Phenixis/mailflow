@@ -16,3 +16,14 @@ test('the tag filter bar takes the list background instead of painting its own',
   const source = readFileSync(new URL('./TagFilterBar.jsx', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /aria-label[^\n]*background:/);
 });
+
+// Several screens load the list of tags; each one must reload when the list changes, or a tag
+// created in Settings would not show in the filter bar, the pickers or a plugin until a refresh.
+test('screens that list the tags depend on the definitions revision', () => {
+  for (const file of ['TagFilterBar.jsx', 'TagPickerList.jsx', 'TagsSettings.jsx']) {
+    const source = readFileSync(new URL(`./${file}`, import.meta.url), 'utf8');
+    assert.match(source, /useTagDefinitionsRevision\(\)/, `${file} reads the revision`);
+  }
+  const settings = readFileSync(new URL('./TagsSettings.jsx', import.meta.url), 'utf8');
+  assert.match(settings, /bumpTagDefinitions\(\)/, 'creating, editing or deleting a tag announces the change');
+});

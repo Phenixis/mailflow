@@ -1907,5 +1907,44 @@
     "trash": "Kosz",
     "spam": "Spam",
     "archive": "Archiwum"
+  },
+  "tags": {
+    "title": "Tagi",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "ustawiony ręcznie",
+      "auto": "dodany przez {{source}}"
+    },
+    "header": {
+      "hide": "Ukryj tagi",
+      "none": "Nie zdefiniowano jeszcze tagów. Utwórz je w ustawieniach."
+    },
+    "filter": {
+      "all": "Cała poczta",
+      "label": "Filtr tagów",
+      "modeAny": "dowolny z nich",
+      "modeAll": "wszystkie",
+      "modeHint": "Pokaż pocztę z dowolnym z wybranych tagów lub tylko pocztę ze wszystkimi"
+    },
+    "picker": {
+      "count": "{{n}} z {{total}}"
+    },
+    "toast": {
+      "added": "Dodano tag „{{name}}” do wiadomości: {{n}}",
+      "removed": "Usunięto tag „{{name}}” z wiadomości: {{n}}",
+      "failed": "Nie udało się zaktualizować tagu: {{error}}"
+    },
+    "settings": {
+      "note": "Tagi są przechowywane tylko w MailFlow; nic nie jest zapisywane na Twoich serwerach pocztowych.",
+      "name": "Nazwa",
+      "color": "Kolor",
+      "key": "Klucz (małe litery, cyfry, _)",
+      "on": "włączony",
+      "confirmDelete": "Usunąć tag „{{name}}” i usunąć go ze wszystkich wiadomości?",
+      "add": "Dodaj tag",
+      "create": "Utwórz"
+    }
   }
 }

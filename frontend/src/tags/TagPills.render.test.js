@@ -6,15 +6,12 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import { JSDOM } from 'jsdom';
 import { transform } from 'sucrase';
+import { makeT, reactI18nextMockSource } from './i18nTestSupport.js';
 
 registerHooks({
   load(url, context, nextLoad) {
     if (url.endsWith('react-i18next/dist/es/index.js') || url.endsWith('/react-i18next')) {
-      return { format: 'module', shortCircuit: true, source: [
-        'export const useTranslation = () => ({ t: (k) => k, i18n: { language: "en", changeLanguage: () => {} } });',
-        'export const initReactI18next = { type: "3rdParty", init: () => {} };',
-        'export default { useTranslation, initReactI18next };',
-      ].join('\n') };
+      return { format: 'module', shortCircuit: true, source: reactI18nextMockSource() };
     }
     if (url.endsWith('.json')) {
       return { format: 'module', shortCircuit: true, source: `export default ${readFileSync(new URL(url), 'utf8')}` };
@@ -38,9 +35,8 @@ globalThis.matchMedia = dom.window.matchMedia;
 globalThis.__VITE_ENV__ = { MODE: 'test', DEV: false, PROD: true };
 
 const { Pill } = await import('./TagPills.jsx');
-const { translate } = await import('./strings.js');
-const tEn = (key, vars) => translate('en', key, vars);
-const tFr = (key, vars) => translate('fr-FR', key, vars);
+const tEn = makeT('en');
+const tFr = makeT('fr');
 
 test('Pill shows the name and says whether the tag was set by hand or by a plugin', () => {
   const manual = renderToStaticMarkup(createElement(Pill, { tag: { tagId: 't', name: 'Urgent', color: '#ef4444', source: 'manual' }, t: tEn, small: true }));
@@ -52,4 +48,10 @@ test('Pill shows the name and says whether the tag was set by hand or by a plugi
 
 test('Pill tooltip follows the UI language', () => {
   assert.match(renderToStaticMarkup(createElement(Pill, { tag: { tagId: 't', name: 'Urgent', color: '#ef4444', source: 'manual' }, t: tFr })), /défini à la main/);
+});
+
+test('the tooltip uses the locale text for each language', () => {
+  const t = (lang) => makeT(lang);
+  assert.equal(t('de')('tags.toast.added', { name: 'X', n: 2 }), 'Tag „X“ zu 2 Nachricht(en) hinzugefügt');
+  assert.equal(t('en')('tags.picker.count', { n: 1, total: 3 }), '1 of 3');
 });

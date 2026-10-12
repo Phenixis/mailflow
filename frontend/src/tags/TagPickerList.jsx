@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { api } from '../utils/api.js';
 import { useMessageTags, useTagCounts, invalidateTags } from './tagStore.js';
 import { useStore } from '../store/index.js';
-import { useT } from './strings.js';
+import { useTranslation } from 'react-i18next';
 
 // The user's tags as a list to put on or take off the given messages. One message: a checkbox per
 // tag (and keys 1-9 toggle the nth tag when `hotkeys` is set). Several: "add" and "remove" per tag,
 // applied to all of them. Used by the context menu, the bulk toolbar and the keyboard picker.
 export default function TagPickerList({ messageIds, hotkeys = false }) {
-  const t = useT();
+  const { t } = useTranslation();
   const [defs, setDefs] = useState(null);
   const [error, setError] = useState(null);
   const single = messageIds.length === 1;
@@ -24,10 +24,10 @@ export default function TagPickerList({ messageIds, hotkeys = false }) {
       const { updated } = await api.tagBulk(messageIds, def.id, on);
       invalidateTags(messageIds);
       setError(null);
-      if (!single) notify(t(on ? 'toast.added' : 'toast.removed', { name: def.name, n: updated }));
+      if (!single) notify(t(on ? 'tags.toast.added' : 'tags.toast.removed', { name: def.name, n: updated }));
     } catch (e) {
       setError(e.message);
-      notify(t('toast.failed', { error: e.message }), 'error');
+      notify(t('tags.toast.failed', { error: e.message }), 'error');
     }
   };
 
@@ -48,7 +48,7 @@ export default function TagPickerList({ messageIds, hotkeys = false }) {
   const row = { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', fontSize: 13, color: 'var(--text-primary)' };
   const small = { fontSize: 11, padding: '2px 8px', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', background: 'transparent', color: 'var(--text-primary)' };
   if (!defs) return <div style={{ ...row, color: 'var(--text-tertiary)' }}>{error || '...'}</div>;
-  if (!defs.length) return <div style={{ ...row, color: 'var(--text-tertiary)' }}>{t('header.none')}</div>;
+  if (!defs.length) return <div style={{ ...row, color: 'var(--text-tertiary)' }}>{t('tags.header.none')}</div>;
 
   return (
     <div>
@@ -68,11 +68,11 @@ export default function TagPickerList({ messageIds, hotkeys = false }) {
                 <span style={{ flex: 1 }}>
                   {def.name}
                   <span style={{ marginLeft: 6, fontSize: 11, color: counts[def.id] ? 'var(--accent)' : 'var(--text-tertiary)' }}>
-                    {t('picker.count', { n: counts[def.id] || 0, total: messageIds.length })}
+                    {t('tags.picker.count', { n: counts[def.id] || 0, total: messageIds.length })}
                   </span>
                 </span>
-                <button style={small} onClick={() => apply(def, true)}>{t('picker.add')}</button>
-                <button style={small} onClick={() => apply(def, false)}>{t('picker.remove')}</button>
+                <button style={small} onClick={() => apply(def, true)}>{t('common.add')}</button>
+                <button style={small} onClick={() => apply(def, false)}>{t('common.remove')}</button>
               </>
             )}
             {hotkeys && i < 9 && <kbd style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{i + 1}</kbd>}

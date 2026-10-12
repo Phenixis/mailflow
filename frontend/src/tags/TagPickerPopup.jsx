@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import TagPickerList from './TagPickerList.jsx';
-import { useT } from './strings.js';
+import { useTranslation } from 'react-i18next';
 
 // The keyboard tag picker: a small centered panel for the selected message. 1-9 toggle the nth tag,
 // Escape or a click outside closes it. Opened by the 'openTagPicker' shortcut (see MailApp).
 export default function TagPickerPopup({ message, onClose }) {
-  const t = useT();
+  const { t } = useTranslation();
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
     document.addEventListener('keydown', onKey, true);
@@ -18,7 +18,7 @@ export default function TagPickerPopup({ message, onClose }) {
         style={{ minWidth: 280, maxWidth: 380, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: 'var(--shadow-modal)', overflow: 'hidden' }}
       >
         <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: 12, fontWeight: 600 }}>{t('menu.tags')}</div>
+          <div style={{ fontSize: 12, fontWeight: 600 }}>{t('tags.title')}</div>
           <div style={{ fontSize: 11, color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{message.subject}</div>
         </div>
         <TagPickerList messageIds={[message.id]} hotkeys />

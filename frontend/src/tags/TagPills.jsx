@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { useMessageTags } from './tagStore.js';
 import TagPickerList from './TagPickerList.jsx';
 import { PluginSlot } from '../plugins/PluginSlot.jsx';
-import { useT } from './strings.js';
+import { useTranslation } from 'react-i18next';
 
-const sourceNote = (tag, t) => (tag.source === 'manual' ? t('source.manual') : t('source.auto', { source: tag.source }));
+const sourceNote = (tag, t) => (tag.source === 'manual' ? t('tags.source.manual') : t('tags.source.auto', { source: tag.source }));
 
 export function Pill({ tag, small, t }) {
   return (
     <span
-      title={t('pill.title', { name: tag.name, source: sourceNote(tag, t) })}
+      title={t('tags.pill.title', { name: tag.name, source: sourceNote(tag, t) })}
       style={{
         display: 'inline-flex', alignItems: 'center', flexShrink: 0,
         fontSize: small ? 10 : 11, fontWeight: 600, lineHeight: 1,
@@ -24,7 +24,7 @@ export function Pill({ tag, small, t }) {
 
 // Compact pills for a message-list row.
 export function RowTagPills({ message }) {
-  const t = useT();
+  const { t } = useTranslation();
   const tags = useMessageTags(message.id);
   if (!tags.length) return null;
   return <span style={{ display: 'inline-flex', gap: 4, flexShrink: 0 }}>{tags.map((tag) => <Pill key={tag.tagId} tag={tag} t={t} small />)}</span>;
@@ -33,7 +33,7 @@ export function RowTagPills({ message }) {
 // Pills in the reading-pane header plus a small editor to add or remove tags by hand. Plugins can add
 // their own controls next to it through the 'message-header-badge' slot. Fragment: lives in a flex row.
 export function HeaderTags({ message }) {
-  const t = useT();
+  const { t } = useTranslation();
   const tags = useMessageTags(message.id);
   const [open, setOpen] = useState(false);
 
@@ -46,7 +46,7 @@ export function HeaderTags({ message }) {
         onClick={() => setOpen(!open)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 11, padding: '0 2px' }}
       >
-        {open ? t('header.hide') : t('header.tags')}
+        {open ? t('tags.header.hide') : t('tags.title')}
       </button>
       <PluginSlot name="message-header-badge" ctx={{ message }} />
       {open && (

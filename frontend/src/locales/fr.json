@@ -2307,5 +2307,44 @@
     "formNote": "Les boîtes Gmail et Google Workspace peuvent se connecter avec Google au lieu d'un mot de passe d'application.",
     "appPasswordNote": "Gmail demande un mot de passe d'application, pas votre mot de passe habituel. Activez la validation en deux étapes de votre compte Google, puis créez un mot de passe d'application et saisissez-le dans le champ du mot de passe.",
     "createAppPassword": "Créer un mot de passe d'application"
+  },
+  "tags": {
+    "title": "Tags",
+    "pill": {
+      "title": "{{name}} : {{source}}"
+    },
+    "source": {
+      "manual": "défini à la main",
+      "auto": "ajouté par {{source}}"
+    },
+    "header": {
+      "hide": "Masquer les tags",
+      "none": "Aucun tag défini. Créez-en dans les réglages."
+    },
+    "filter": {
+      "all": "Tous les mails",
+      "label": "Filtre par tag",
+      "modeAny": "l'un d'eux",
+      "modeAll": "tous",
+      "modeHint": "Afficher les mails ayant l'un des tags choisis, ou seulement ceux qui les ont tous"
+    },
+    "picker": {
+      "count": "{{n}} sur {{total}}"
+    },
+    "toast": {
+      "added": "Tag « {{name}} » ajouté à {{n}} message(s)",
+      "removed": "Tag « {{name}} » retiré de {{n}} message(s)",
+      "failed": "Impossible de modifier le tag : {{error}}"
+    },
+    "settings": {
+      "note": "Les tags sont stockés dans MailFlow uniquement ; rien n'est écrit sur vos serveurs de messagerie.",
+      "name": "Nom",
+      "color": "Couleur",
+      "key": "Clé (lettres minuscules, chiffres, _)",
+      "on": "actif",
+      "confirmDelete": "Supprimer le tag « {{name}} » et le retirer de tous les messages ?",
+      "add": "Ajouter un tag",
+      "create": "Créer"
+    }
   }
 }

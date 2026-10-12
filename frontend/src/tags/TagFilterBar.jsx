@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { api } from '../utils/api.js';
 import { useStore } from '../store/index.js';
 import { getTagFilter, setTagFilterState, subscribeTagFilter } from './filterState.js';
-import { useT } from './strings.js';
+import { useTranslation } from 'react-i18next';
 
 // Change the filter and make the list reload from the first page.
 export function applyTagFilter(next) {
@@ -13,7 +13,7 @@ export function applyTagFilter(next) {
 // A row of tag chips above the message list. Clicking chips selects several tags; with two or more
 // selected a switch chooses between "any of them" and "all of them".
 export default function TagFilterBar() {
-  const t = useT();
+  const { t } = useTranslation();
   const { keys, mode } = useSyncExternalStore(subscribeTagFilter, getTagFilter);
   const [defs, setDefs] = useState([]);
   useEffect(() => { api.tagDefinitions().then((d) => setDefs(d.filter((x) => x.enabled))).catch(() => {}); }, []);
@@ -27,18 +27,18 @@ export default function TagFilterBar() {
   const toggle = (key) => applyTagFilter({ keys: keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key] });
 
   return (
-    <div aria-label={t('filter.label')} style={{ display: 'flex', gap: 6, padding: '6px 10px', overflowX: 'auto', scrollbarWidth: 'none', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
-      <button style={chip(!keys.length, 'var(--accent)')} onClick={() => applyTagFilter({ keys: [] })}>{t('filter.all')}</button>
+    <div aria-label={t('tags.filter.label')} style={{ display: 'flex', gap: 6, padding: '6px 10px', overflowX: 'auto', scrollbarWidth: 'none', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
+      <button style={chip(!keys.length, 'var(--accent)')} onClick={() => applyTagFilter({ keys: [] })}>{t('tags.filter.all')}</button>
       {defs.map((d) => (
         <button key={d.id} style={chip(keys.includes(d.key), d.color)} onClick={() => toggle(d.key)}>{d.name}</button>
       ))}
       {keys.length > 1 && (
         <button
-          title={t('filter.modeHint')}
+          title={t('tags.filter.modeHint')}
           style={{ ...chip(false, 'var(--accent)'), marginLeft: 'auto', color: 'var(--text-primary)' }}
           onClick={() => applyTagFilter({ mode: mode === 'any' ? 'all' : 'any' })}
         >
-          {t(mode === 'any' ? 'filter.modeAny' : 'filter.modeAll')}
+          {t(mode === 'any' ? 'tags.filter.modeAny' : 'tags.filter.modeAll')}
         </button>
       )}
     </div>

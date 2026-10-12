@@ -2,19 +2,19 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import TagPickerList from './TagPickerList.jsx';
 import { useMobile } from '../hooks/useMobile.js';
-import { useT } from './strings.js';
+import { useTranslation } from 'react-i18next';
 
 // The "Tags" button of the bulk-selection toolbar. `Btn` is the toolbar's own button component, so
 // it looks like its neighbours; clicking opens a small popover to add or remove tags on all `ids`.
 export default function TagBulkButton({ ids, Btn }) {
-  const t = useT();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const isMobile = useMobile();
   const list = <TagPickerList messageIds={ids} />;
 
   return (
     <div style={{ position: 'relative' }}>
-      <Btn title={t('menu.tags')} onClick={() => setOpen(!open)}>
+      <Btn title={t('tags.title')} onClick={() => setOpen(!open)}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
           <line x1="7" y1="7" x2="7.01" y2="7" />
@@ -42,7 +42,7 @@ export default function TagBulkButton({ ids, Btn }) {
           />
           <div
             role="dialog"
-            aria-label={t('menu.tags')}
+            aria-label={t('tags.title')}
             style={{
               position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 3001, maxHeight: '70vh', overflowY: 'auto',
               background: 'var(--bg-secondary)', borderRadius: '16px 16px 0 0',
@@ -50,7 +50,7 @@ export default function TagBulkButton({ ids, Btn }) {
               paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
             }}
           >
-            <div style={{ padding: '12px 14px 4px', fontSize: 12, fontWeight: 600 }}>{t('menu.tags')}</div>
+            <div style={{ padding: '12px 14px 4px', fontSize: 12, fontWeight: 600 }}>{t('tags.title')}</div>
             {list}
           </div>
         </>,

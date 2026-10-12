@@ -27,7 +27,7 @@ export default function TagFilterBar() {
   const toggle = (key) => applyTagFilter({ keys: keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key] });
 
   return (
-    <div aria-label={t('tags.filter.label')} style={{ display: 'flex', gap: 6, padding: '6px 10px', overflowX: 'auto', scrollbarWidth: 'none', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
+    <div aria-label={t('tags.filter.label')} style={{ display: 'flex', gap: 6, padding: '6px 10px', overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0, borderBottom: '1px solid var(--border-subtle)' }}>
       <button style={chip(!keys.length, 'var(--accent)')} onClick={() => applyTagFilter({ keys: [] })}>{t('tags.filter.all')}</button>
       {defs.map((d) => (
         <button key={d.id} style={chip(keys.includes(d.key), d.color)} onClick={() => toggle(d.key)}>{d.name}</button>

@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
 vi.mock('../api.js', () => api);
 const cfg = vi.hoisted(() => ({
   loadSettings: vi.fn(), saveSettings: vi.fn(), loadQuestions: vi.fn(), saveQuestion: vi.fn(), removeQuestion: vi.fn(), ensureDefaults: vi.fn(),
+  defaultInstructions: (name) => `default for ${name}`,
 }));
 vi.mock('./config.js', () => cfg);
 const enqueue = vi.hoisted(() => vi.fn(() => 1));
@@ -60,11 +61,13 @@ describe('questions', () => {
     cfg.loadQuestions.mockResolvedValue({ urgent: { instructions: 'q', enabled: true } });
     const json = await (await call('GET', '/questions')).json();
     expect(json.map((t) => [t.key, t.question === null])).toEqual([['urgent', false], ['travel', true]]);
+    expect(json[1].defaultInstructions).toBe('default for Travel');
   });
 
   it('validates a question, requires an existing tag, and saves it with defaults filled in', async () => {
     api.listTagDefinitions.mockResolvedValue([{ key: 'travel', name: 'Travel', enabled: true }]);
-    expect((await call('PUT', '/questions/travel', {})).status).toBe(400);
+    expect((await call('PUT', '/questions/travel', { instructions: 42 })).status).toBe(400);
+    expect((await call('PUT', '/questions/travel', { learn: 'yes' })).status).toBe(400);
     expect((await call('PUT', '/questions/travel', { instructions: 'q', true_examples: 'nope' })).status).toBe(400);
     expect((await call('PUT', '/questions/travel', { instructions: 'q', threshold_high: 2 })).status).toBe(400);
     expect((await call('PUT', '/questions/Bad Key', { instructions: 'q' })).status).toBe(400);
@@ -73,8 +76,14 @@ describe('questions', () => {
     expect((await call('PUT', '/questions/travel', { instructions: ' About a trip? ', true_examples: ['Your flight'] })).status).toBe(200);
     expect(cfg.saveQuestion).toHaveBeenCalledWith('u1', 'travel', {
       instructions: 'About a trip?', true_what: null, true_examples: ['Your flight'], false_what: null, false_examples: [],
-      threshold_low: null, threshold_high: null, enabled: true,
+      threshold_low: null, threshold_high: null, enabled: true, learn: true,
     });
+  });
+
+  it('lets Jev be switched on for a tag with no written question (the default one is used)', async () => {
+    api.listTagDefinitions.mockResolvedValue([{ key: 'travel', name: 'Travel', enabled: true }]);
+    expect((await call('PUT', '/questions/travel', { enabled: true })).status).toBe(200);
+    expect(cfg.saveQuestion.mock.calls.at(-1)[2]).toMatchObject({ instructions: '', enabled: true, learn: true });
   });
 
   it('removes a question and creates the defaults', async () => {

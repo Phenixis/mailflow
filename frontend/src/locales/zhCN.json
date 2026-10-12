@@ -1998,5 +1998,65 @@
       "add": "添加标签",
       "create": "创建"
     }
+  },
+  "jevTags": {
+    "why": {
+      "show": "为什么？",
+      "hide": "隐藏",
+      "none": "Jev 尚未查看这封邮件。",
+      "applied": "已应用",
+      "notApplied": "未应用",
+      "subject": "仅主题",
+      "body": "主题 + 正文摘录",
+      "runFailed": "上次运行失败：{{error}}",
+      "runBody": "已发送正文摘录",
+      "runNoBody": "未发送正文",
+      "runPrivate": "私密：未发送正文",
+      "runTokens": "{{n}} 个 token",
+      "reclassify": "重新分类"
+    },
+    "conn": {
+      "title": "Jev 连接",
+      "keyLabel": "TypeSafe API 密钥",
+      "keySet": "已设置",
+      "keyEnv": "已设置（来自服务器环境）",
+      "keyUnset": "未设置",
+      "keyPlaceholderSet": "输入新密钥以替换",
+      "saved": "API 密钥已保存",
+      "removed": "API 密钥已删除",
+      "low": "不确定区间：低于此值 = 否",
+      "high": "不确定区间：高于此值 = 是",
+      "private": "高于此值视为私密（零信任）",
+      "body": "正文摘录（字符数）",
+      "gate": "隐私标签（带此标签的邮件永不发送正文）",
+      "privacyNote": "仅发送发件人、主题和今天的日期。只有在此之后仍不确定的标签才会发送正文摘录，被判定为私密的邮件永远不会发送。",
+      "saveSettings": "保存设置",
+      "settingsSaved": "设置已保存"
+    },
+    "acc": {
+      "title": "要打标签的账户",
+      "note": "在此启用之前，不会向 Jev 发送该账户的任何内容。",
+      "backfill": "对收件箱中最新的 100 封未分类邮件进行分类",
+      "reclassify": "对收件箱中最新的 100 封邮件重新分类（包括已有标签的；手动设置的标签会保留）",
+      "queued": "{{n}} 封邮件已排队（已启用 {{a}} 个账户）"
+    },
+    "q": {
+      "title": "Jev 负责判断的内容",
+      "note": "可为任何标签启用 Jev。没有自定义问题时，它会询问“这封邮件是否属于此标签？”，并从您手动打的标签中学习。更改仅适用于此后分类的邮件。",
+      "defaults": "使用默认问题创建“私密”“重要”“紧急”标签",
+      "created": "已创建默认标签",
+      "off": "Jev 不分配此标签",
+      "toggle": "Jev",
+      "learn": "同时从我手动打标签的邮件中学习（其主题会作为示例发送）",
+      "learnNote": "隐私标签从不学习，带有它的邮件也绝不会被用作示例。",
+      "question": "Jev 回答的是/否问题（可选：留空则使用所示默认问题）",
+      "yesMeans": "“是”表示…",
+      "yesExamples": "“是”的示例（每行一个）",
+      "noMeans": "“否”表示…",
+      "noExamples": "“否”的示例（每行一个）",
+      "save": "保存问题",
+      "saved": "问题已保存",
+      "remove": "不再对此标签使用 Jev"
+    }
   }
 }

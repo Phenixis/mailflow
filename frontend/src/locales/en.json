@@ -1998,5 +1998,65 @@
       "add": "Add a tag",
       "create": "Create"
     }
+  },
+  "jevTags": {
+    "why": {
+      "show": "Why?",
+      "hide": "Hide",
+      "none": "Jev has not looked at this message yet.",
+      "applied": "applied",
+      "notApplied": "not applied",
+      "subject": "subject only",
+      "body": "subject + body excerpt",
+      "runFailed": "Last run failed: {{error}}",
+      "runBody": "Body excerpt sent",
+      "runNoBody": "Body not sent",
+      "runPrivate": "Private: body not sent",
+      "runTokens": "{{n}} tokens",
+      "reclassify": "Reclassify"
+    },
+    "conn": {
+      "title": "Jev connection",
+      "keyLabel": "TypeSafe API key",
+      "keySet": "set",
+      "keyEnv": "set, from the server environment",
+      "keyUnset": "not set",
+      "keyPlaceholderSet": "Enter a new key to replace it",
+      "saved": "API key saved",
+      "removed": "API key removed",
+      "low": "Unsure band: below this = no",
+      "high": "Unsure band: above this = yes",
+      "private": "Private above (zero trust)",
+      "body": "Body excerpt (characters)",
+      "gate": "Privacy tag (mail with it never has its body sent)",
+      "privacyNote": "Only sender, subject and today's date are sent. The body excerpt is sent only for tags still unsure after that, and never for a message scored private.",
+      "saveSettings": "Save settings",
+      "settingsSaved": "Settings saved"
+    },
+    "acc": {
+      "title": "Accounts to tag",
+      "note": "Nothing is sent to Jev for an account until you enable it here.",
+      "backfill": "Classify the 100 newest unclassified inbox messages",
+      "reclassify": "Reclassify the 100 newest inbox messages (including already tagged; tags set by hand are kept)",
+      "queued": "{{n}} message(s) queued ({{a}} account(s) enabled)"
+    },
+    "q": {
+      "title": "What Jev decides",
+      "note": "Switch Jev on for any tag. With no question of your own it asks \"does the message belong under this tag?\" and learns from the mail you tag by hand. Changes apply to mail classified from now on.",
+      "defaults": "Create the Private, Important and Urgent tags with default questions",
+      "created": "Default tags created",
+      "off": "Jev does not assign this tag",
+      "toggle": "Jev",
+      "learn": "Also learn from the mail I tagged by hand (their subjects are sent as examples)",
+      "learnNote": "The privacy tag never learns, and mail carrying it is never used as an example.",
+      "question": "The yes/no question Jev answers (optional: leave empty to use the default shown)",
+      "yesMeans": "Yes means...",
+      "yesExamples": "Examples of yes (one per line)",
+      "noMeans": "No means...",
+      "noExamples": "Examples of no (one per line)",
+      "save": "Save question",
+      "saved": "Question saved",
+      "remove": "Stop using Jev for this tag"
+    }
   }
 }

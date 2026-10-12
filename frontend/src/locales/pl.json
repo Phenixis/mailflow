@@ -2017,5 +2017,65 @@
       "add": "Dodaj tag",
       "create": "Utwórz"
     }
+  },
+  "jevTags": {
+    "why": {
+      "show": "Dlaczego?",
+      "hide": "Ukryj",
+      "none": "Jev nie przeanalizował jeszcze tej wiadomości.",
+      "applied": "zastosowany",
+      "notApplied": "niezastosowany",
+      "subject": "tylko temat",
+      "body": "temat + fragment treści",
+      "runFailed": "Ostatnie uruchomienie nie powiodło się: {{error}}",
+      "runBody": "Fragment treści wysłany",
+      "runNoBody": "Treść nie została wysłana",
+      "runPrivate": "Prywatne: treść nie została wysłana",
+      "runTokens": "{{n}} tokenów",
+      "reclassify": "Sklasyfikuj ponownie"
+    },
+    "conn": {
+      "title": "Połączenie z Jev",
+      "keyLabel": "Klucz API TypeSafe",
+      "keySet": "ustawiony",
+      "keyEnv": "ustawiony, ze środowiska serwera",
+      "keyUnset": "nie ustawiono",
+      "keyPlaceholderSet": "Wpisz nowy klucz, aby go zastąpić",
+      "saved": "Klucz API zapisany",
+      "removed": "Klucz API usunięty",
+      "low": "Strefa niepewności: poniżej = nie",
+      "high": "Strefa niepewności: powyżej = tak",
+      "private": "Prywatne powyżej (zero zaufania)",
+      "body": "Fragment treści (znaki)",
+      "gate": "Tag prywatności (treść poczty z tym tagiem nigdy nie jest wysyłana)",
+      "privacyNote": "Wysyłani są tylko nadawca, temat i dzisiejsza data. Fragment treści jest wysyłany tylko dla tagów, które nadal są niepewne, i nigdy dla wiadomości uznanej za prywatną.",
+      "saveSettings": "Zapisz ustawienia",
+      "settingsSaved": "Ustawienia zapisane"
+    },
+    "acc": {
+      "title": "Konta do tagowania",
+      "note": "Nic nie jest wysyłane do Jev dla konta, dopóki go tu nie włączysz.",
+      "backfill": "Sklasyfikuj 100 najnowszych nieskasyfikowanych wiadomości w skrzynce odbiorczej",
+      "reclassify": "Sklasyfikuj ponownie 100 najnowszych wiadomości w skrzynce odbiorczej (także już otagowane; tagi ustawione ręcznie zostają)",
+      "queued": "{{n}} wiadomości w kolejce (włączone konta: {{a}})"
+    },
+    "q": {
+      "title": "O czym decyduje Jev",
+      "note": "Włącz Jev dla dowolnego tagu. Bez własnego pytania pyta „czy wiadomość należy do tego tagu?” i uczy się z poczty, którą otagujesz ręcznie. Zmiany dotyczą poczty klasyfikowanej od teraz.",
+      "defaults": "Utwórz tagi Prywatne, Ważne i Pilne z domyślnymi pytaniami",
+      "created": "Utworzono domyślne tagi",
+      "off": "Jev nie przypisuje tego tagu",
+      "toggle": "Jev",
+      "learn": "Ucz się także z poczty, którą otagowałem ręcznie (jej tematy są wysyłane jako przykłady)",
+      "learnNote": "Tag prywatności nigdy się nie uczy, a poczta z tym tagiem nigdy nie jest używana jako przykład.",
+      "question": "Pytanie tak/nie, na które odpowiada Jev (opcjonalnie: pozostaw puste, aby użyć wyświetlonego domyślnego)",
+      "yesMeans": "Tak oznacza…",
+      "yesExamples": "Przykłady „tak” (po jednym w wierszu)",
+      "noMeans": "Nie oznacza…",
+      "noExamples": "Przykłady „nie” (po jednym w wierszu)",
+      "save": "Zapisz pytanie",
+      "saved": "Pytanie zapisane",
+      "remove": "Przestań używać Jev dla tego tagu"
+    }
   }
 }

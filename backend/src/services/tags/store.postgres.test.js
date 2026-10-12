@@ -150,6 +150,12 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store (PostgreSQL
     await db.query(`UPDATE messages SET plugin_annotations = '{"jev-tags": {"run": {}}}' WHERE id = '${M1}'`);
     expect(await store.listInboxMessageIds(U1, [A1], 10, { withoutAnnotation: 'jev-tags' })).toEqual([]);
     expect(await store.listInboxMessageIds(U1, [A1], 10)).toEqual([M1]);
+    // a failed run can be picked up again, a finished one cannot
+    await db.query(`UPDATE messages SET plugin_annotations = '{"jev-tags": {"run": {"status": "error"}}}' WHERE id = '${M1}'`);
+    expect(await store.listInboxMessageIds(U1, [A1], 10, { withoutAnnotation: 'jev-tags' })).toEqual([]);
+    expect(await store.listInboxMessageIds(U1, [A1], 10, { withoutAnnotation: 'jev-tags', retryStatuses: ['error'] })).toEqual([M1]);
+    await db.query(`UPDATE messages SET plugin_annotations = '{"jev-tags": {"run": {"status": "done"}}}' WHERE id = '${M1}'`);
+    expect(await store.listInboxMessageIds(U1, [A1], 10, { withoutAnnotation: 'jev-tags', retryStatuses: ['error'] })).toEqual([]);
   });
 
   it('cascades: deleting a message or a tag removes the links', async () => {

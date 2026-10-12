@@ -136,19 +136,26 @@ export async function removeTag(userId, messageId, tagKey, source) {
 }
 
 // INBOX messages of the given accounts (owned by the user), newest first. `withoutAnnotation` limits
-// the result to messages a plugin has not annotated yet (its "not processed" marker).
-export async function listInboxMessageIds(userId, accountIds, limit, { withoutAnnotation = null } = {}) {
+// the result to messages a plugin has not processed yet (no annotation of that plugin), plus, with
+// `retryStatuses`, those whose last run ended in one of those statuses (e.g. ['error'] to retry failures).
+export async function listInboxMessageIds(userId, accountIds, limit, { withoutAnnotation = null, retryStatuses = [] } = {}) {
   if (!accountIds.length) return [];
   const params = [accountIds, userId, limit];
-  let missing = '';
+  let pending = '';
   if (withoutAnnotation) {
     params.push(withoutAnnotation);
-    missing = `AND NOT (m.plugin_annotations ? $${params.length})`;
+    const plugin = `$${params.length}`;
+    let retry = '';
+    if (retryStatuses.length) {
+      params.push(retryStatuses);
+      retry = ` OR m.plugin_annotations -> ${plugin} -> 'run' ->> 'status' = ANY($${params.length}::text[])`;
+    }
+    pending = `AND (NOT (m.plugin_annotations ? ${plugin})${retry})`;
   }
   const { rows } = await query(
     `SELECT m.id FROM messages m JOIN email_accounts a ON a.id = m.account_id
       WHERE m.account_id = ANY($1::uuid[]) AND a.user_id = $2 AND m.folder = 'INBOX' AND m.is_deleted = false
-        ${missing}
+        ${pending}
       ORDER BY m.date DESC NULLS LAST LIMIT $3`,
     params
   );
@@ -178,3 +185,4 @@ export async function listTagExamples(userId, tagKey, { excludeIfTagged = [], li
   };
   return { positives: await run(false), negatives: await run(true) };
 }
+

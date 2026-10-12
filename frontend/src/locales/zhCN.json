@@ -1951,6 +1951,7 @@
       "keyEnv": "已设置（来自服务器环境）",
       "keyUnset": "未设置",
       "keyPlaceholderSet": "输入新密钥以替换",
+      "keyFormatHint": "TypeSafe 密钥通常以“apikey_”开头。请粘贴完整的密钥，而不是其中一部分。",
       "saved": "API 密钥已保存",
       "removed": "API 密钥已删除",
       "low": "不确定区间：低于此值 = 否",

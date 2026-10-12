@@ -40,9 +40,10 @@ function Connection({ tags }) {
       </span>
       <div style={{ display: 'flex', gap: 6 }}>
         <input type="password" autoComplete="off" value={key} placeholder={s.hasApiKey ? t('jevTags.conn.keyPlaceholderSet') : 'apikey_...'} style={input} onChange={(e) => setKey(e.target.value)} />
-        <button style={btn} disabled={!key} onClick={() => save({ apiKey: key }, t('jevTags.conn.saved'))}>{t('common.save')}</button>
+        <button style={btn} disabled={!key} onClick={() => save({ apiKey: key.trim() }, t('jevTags.conn.saved'))}>{t('common.save')}</button>
         {s.apiKeySource === 'ui' && <button style={btn} onClick={() => save({ apiKey: '' }, t('jevTags.conn.removed'))}>{t('common.remove')}</button>}
       </div>
+      {key && !key.trim().startsWith('apikey_') && <div style={{ fontSize: 11, color: 'var(--red, #ef4444)', marginTop: 4 }}>{t('jevTags.conn.keyFormatHint')}</div>}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
         {num('threshold_low', 'jevTags.conn.low')}
         {num('threshold_high', 'jevTags.conn.high')}

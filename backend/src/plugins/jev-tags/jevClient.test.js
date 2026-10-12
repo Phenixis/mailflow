@@ -33,7 +33,7 @@ describe('askJev', () => {
 
   it('does not retry a 401 and does not leak the body', async () => {
     const request = vi.fn(async () => fail(401));
-    await expect(askJev({ ...base, request })).rejects.toMatchObject({ name: 'JevError', status: 401, message: 'Jev API HTTP 401' });
+    await expect(askJev({ ...base, request })).rejects.toMatchObject({ name: 'JevError', status: 401, message: expect.stringContaining('API key was rejected') });
     expect(request).toHaveBeenCalledTimes(1);
   });
 

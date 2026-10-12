@@ -134,10 +134,10 @@ describe('messages', () => {
     api.getAccountConfig.mockImplementation(async (_p, id) => ({ enabled: id === ID }));
     api.listInboxMessageIds.mockResolvedValue(['m1', 'm2']);
     expect((await call('POST', '/backfill', { limit: 50 })).status).toBe(202);
-    expect(api.listInboxMessageIds).toHaveBeenLastCalledWith('u1', [ID], 50, { withoutAnnotation: 'jev-tags' });
+    expect(api.listInboxMessageIds).toHaveBeenLastCalledWith('u1', [ID], 50, { withoutAnnotation: 'jev-tags', retryStatuses: ['error'] });
     expect((await call('POST', '/backfill', { limit: 9999 })).status).toBe(400);
     expect((await call('POST', '/backfill', { limit: 10, force: 'yes' })).status).toBe(400);
     await call('POST', '/backfill', { limit: 10, force: true });
-    expect(api.listInboxMessageIds).toHaveBeenLastCalledWith('u1', [ID], 10, { withoutAnnotation: null });
+    expect(api.listInboxMessageIds).toHaveBeenLastCalledWith('u1', [ID], 10, {});
   });
 });

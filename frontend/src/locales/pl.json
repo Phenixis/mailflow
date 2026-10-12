@@ -1970,6 +1970,7 @@
       "keyEnv": "ustawiony, ze środowiska serwera",
       "keyUnset": "nie ustawiono",
       "keyPlaceholderSet": "Wpisz nowy klucz, aby go zastąpić",
+      "keyFormatHint": "Klucz TypeSafe zwykle zaczyna się od „apikey_”. Wklej cały klucz, a nie tylko jego część.",
       "saved": "Klucz API zapisany",
       "removed": "Klucz API usunięty",
       "low": "Strefa niepewności: poniżej = nie",

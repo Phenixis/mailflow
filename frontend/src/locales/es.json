@@ -1951,6 +1951,7 @@
       "keyEnv": "definida, desde el entorno del servidor",
       "keyUnset": "sin definir",
       "keyPlaceholderSet": "Introduce una clave nueva para reemplazarla",
+      "keyFormatHint": "Una clave de TypeSafe suele empezar por «apikey_». Pega la clave completa, no solo una parte.",
       "saved": "Clave de API guardada",
       "removed": "Clave de API eliminada",
       "low": "Zona de duda: por debajo = no",

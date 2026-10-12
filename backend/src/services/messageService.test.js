@@ -343,3 +343,37 @@ describe('listMessages — ghost row suppression (#407)', () => {
     expect(query.mock.calls[3][0]).toContain('NOT (m.message_id IS NULL');
   });
 });
+
+describe('listMessages — tag filter', () => {
+  const accounts = { rows: [{ id: 'acc-1', include_in_unified_inbox: true }] };
+
+  it('filters on a tag the user has not dismissed and counts the matching rows itself', async () => {
+    query
+      .mockResolvedValueOnce(accounts)
+      .mockResolvedValueOnce({ rows: [{ n: 3 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'msg-1' }] });
+
+    const result = await listMessages({ userId: 'user-1', tag: 'urgent' });
+
+    const countSql = query.mock.calls[1][0];
+    expect(countSql).toContain('COUNT(*)');
+    expect(countSql).toContain('message_tags');
+    expect(countSql).toContain('NOT mt.dismissed');
+    expect(countSql).not.toContain('total_count');
+    expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', 'urgent']);
+    expect(result.total).toBe(3);
+    expect(query.mock.calls[2][0]).toContain('message_tags');
+  });
+
+  it('ignores a tag key that is not a plain key, so nothing odd reaches the query', async () => {
+    query
+      .mockResolvedValueOnce(accounts)
+      .mockResolvedValueOnce({ rows: [{ n: 9 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await listMessages({ userId: 'user-1', tag: "x' OR 1=1 --" });
+
+    expect(query.mock.calls[1][0]).toContain('total_count');
+    expect(query.mock.calls[1][0]).not.toContain('message_tags');
+  });
+});

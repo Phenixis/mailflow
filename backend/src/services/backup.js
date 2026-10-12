@@ -44,13 +44,15 @@ export const SETUP_TABLES = [
   'spam_training_deletions',
   'spam_training_log',
   'system_settings',
+  'tag_definitions',
   'trusted_devices',
   'user_identities',
   'user_integrations',
   'users',
 ];
 // The local copy of the mail on the IMAP servers. Synced again after a restore that leaves it out.
-export const MAIL_CACHE_TABLES = ['folders', 'messages', 'unfetchable_uids'];
+// message_tags hangs off messages (the tags on each message), so it travels with them.
+export const MAIL_CACHE_TABLES = ['folders', 'message_tags', 'messages', 'unfetchable_uids'];
 // Short-lived tokens that are worthless minutes later.
 export const TRANSIENT_TABLES = ['ai_codex_device_flows', 'email_otp_tokens', 'password_reset_tokens'];
 // The record of which migrations shaped the schema the rows are written back into.

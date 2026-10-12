@@ -48,6 +48,7 @@ import { refreshListWindow, createTrailingRefresh } from '../utils/listRefresh.j
 import { applyReadGuard as guardReads, clearReadGuard, failMarkRead, setPending, settleMarkRead } from '../utils/pendingReads.js';
 import { RowTagPills } from '../tags/TagPills.jsx';
 import TagFilterBar from '../tags/TagFilterBar.jsx';
+import TagBulkButton from '../tags/TagBulkButton.jsx';
 import { applyDeleteGuard, clearDeleteGuard, clearPendingDelete, setCompletedDelete, setPendingDelete, threadDeleteGuardKey } from '../utils/pendingDeletes.js';
 import {
   archiveInChunks,
@@ -3760,6 +3761,8 @@ function MailboxList() {
               </svg>
             </BulkBtn>
 
+            <TagBulkButton ids={[...selectedIds]} Btn={BulkBtn} />
+
             {/* Move button + folder picker */}
             <div style={{ position: 'relative' }} ref={folderPickerRef}>
               <BulkBtn
@@ -4106,6 +4109,7 @@ function MailboxList() {
             defaultSnoozeView={contextMenu.defaultSnoozeView}
             onClose={() => setContextMenu(null)}
             onAction={(action, data) => handleContextAction(action, contextMenu.message, data)}
+            tagTargetIds={selectedIds.size > 1 && selectedIds.has(contextMenu.message.id) ? [...selectedIds] : null}
           />
         )}
 

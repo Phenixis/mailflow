@@ -861,6 +861,10 @@
         "label": "Abrir selector de carpetas",
         "description": "Copiar el mensaje seleccionado a una carpeta"
       },
+      "openTagPicker": {
+        "label": "Etiquetar mensaje",
+        "description": "Añadir o quitar etiquetas del mensaje seleccionado"
+      },
       "replyAllFromSelection": {
         "label": "Responder a todos desde la selección",
         "description": "Responder a todos los destinatarios del mensaje seleccionado"

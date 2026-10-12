@@ -861,6 +861,10 @@
         "label": "Apri selettore cartelle",
         "description": "Copia il messaggio selezionato in una cartella"
       },
+      "openTagPicker": {
+        "label": "Assegna tag al messaggio",
+        "description": "Aggiungi o rimuovi tag dal messaggio selezionato"
+      },
       "replyAllFromSelection": {
         "label": "Rispondi a tutti dalla selezione",
         "description": "Rispondi a tutti i destinatari del messaggio selezionato"

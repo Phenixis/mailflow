@@ -861,6 +861,10 @@
         "label": "Open label picker",
         "description": "Copy the selected message to a folder"
       },
+      "openTagPicker": {
+        "label": "Tag message",
+        "description": "Add or remove tags on the selected message"
+      },
       "replyAllFromSelection": {
         "label": "Reply all from selection",
         "description": "Reply all to the selected message"

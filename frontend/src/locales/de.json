@@ -861,6 +861,10 @@
         "label": "Ordnerauswahl öffnen",
         "description": "Ausgewählte Nachricht in einen Ordner kopieren"
       },
+      "openTagPicker": {
+        "label": "Nachricht taggen",
+        "description": "Tags der ausgewählten Nachricht hinzufügen oder entfernen"
+      },
       "replyAllFromSelection": {
         "label": "Allen antworten",
         "description": "Allen Empfängern der ausgewählten Nachricht antworten"

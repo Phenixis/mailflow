@@ -946,6 +946,10 @@
         "label": "Otevřít výběr složky",
         "description": "Zkopírovat vybranou zprávu do složky"
       },
+      "openTagPicker": {
+        "label": "Označit zprávu štítky",
+        "description": "Přidat nebo odebrat štítky u vybrané zprávy"
+      },
       "replyAllFromSelection": {
         "label": "Odpovědět všem z výběru",
         "description": "Odpovědět všem příjemcům vybrané zprávy"

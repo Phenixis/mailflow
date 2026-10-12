@@ -346,33 +346,36 @@ describe('listMessages — ghost row suppression (#407)', () => {
 
 describe('listMessages — tag filter', () => {
   const accounts = { rows: [{ id: 'acc-1', include_in_unified_inbox: true }] };
+  const run = async (args) => {
+    query.mockResolvedValueOnce(accounts).mockResolvedValueOnce({ rows: [{ n: 3 }] }).mockResolvedValueOnce({ rows: [{ id: 'msg-1' }] });
+    return listMessages({ userId: 'user-1', ...args });
+  };
 
   it('filters on a tag the user has not dismissed and counts the matching rows itself', async () => {
-    query
-      .mockResolvedValueOnce(accounts)
-      .mockResolvedValueOnce({ rows: [{ n: 3 }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'msg-1' }] });
-
-    const result = await listMessages({ userId: 'user-1', tag: 'urgent' });
-
+    const result = await run({ tag: 'urgent' });
     const countSql = query.mock.calls[1][0];
     expect(countSql).toContain('COUNT(*)');
     expect(countSql).toContain('message_tags');
     expect(countSql).toContain('NOT mt.dismissed');
     expect(countSql).not.toContain('total_count');
-    expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', 'urgent']);
+    expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', ['urgent'], 1]);
     expect(result.total).toBe(3);
     expect(query.mock.calls[2][0]).toContain('message_tags');
   });
 
-  it('ignores a tag key that is not a plain key, so nothing odd reaches the query', async () => {
-    query
-      .mockResolvedValueOnce(accounts)
-      .mockResolvedValueOnce({ rows: [{ n: 9 }] })
-      .mockResolvedValueOnce({ rows: [] });
+  it('matches any of several tags by default, and all of them with tagMode=all', async () => {
+    await run({ tag: 'urgent,important' });
+    expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', ['urgent', 'important'], 1]);
+    query.mockClear();
+    await run({ tag: 'urgent,important', tagMode: 'all' });
+    expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', ['urgent', 'important'], 2]);
+    query.mockClear();
+    await run({ tag: 'urgent,urgent,,important', tagMode: 'all' }); // duplicates and empties do not raise the bar
+    expect(query.mock.calls[1][1][3]).toBe(2);
+  });
 
-    await listMessages({ userId: 'user-1', tag: "x' OR 1=1 --" });
-
+  it('ignores a tag filter containing a key that is not a plain key, so nothing odd reaches the query', async () => {
+    await run({ tag: "urgent,x' OR 1=1 --" });
     expect(query.mock.calls[1][0]).toContain('total_count');
     expect(query.mock.calls[1][0]).not.toContain('message_tags');
   });

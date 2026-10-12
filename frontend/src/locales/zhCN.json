@@ -861,6 +861,10 @@
         "label": "打开文件夹选择器",
         "description": "将选中的邮件复制到文件夹"
       },
+      "openTagPicker": {
+        "label": "给邮件加标签",
+        "description": "为所选邮件添加或移除标签"
+      },
       "replyAllFromSelection": {
         "label": "回复选中邮件的所有人",
         "description": "回复选中邮件的所有收件人"

@@ -861,6 +861,10 @@
         "label": "Abrir seletor de pastas",
         "description": "Copiar a mensagem selecionada para uma pasta"
       },
+      "openTagPicker": {
+        "label": "Marcar mensagem com tags",
+        "description": "Adicionar ou remover tags da mensagem selecionada"
+      },
       "replyAllFromSelection": {
         "label": "Responder a todos da seleção",
         "description": "Responder a todos os destinatários da mensagem selecionada"

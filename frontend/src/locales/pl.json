@@ -626,6 +626,10 @@
         "label": "Otwórz wybór folderu",
         "description": "Skopiuj wybraną wiadomość do folderu"
       },
+      "openTagPicker": {
+        "label": "Otaguj wiadomość",
+        "description": "Dodaj lub usuń tagi w zaznaczonej wiadomości"
+      },
       "replyAllFromSelection": {
         "label": "Odpowiedz wszystkim z wyboru",
         "description": "Odpowiedz wszystkim odbiorcom wybranej wiadomości"

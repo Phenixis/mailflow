@@ -609,6 +609,10 @@
         "description": "선택한 메시지를 폴더에 복사",
         "label": "라벨 선택기 열기"
       },
+      "openTagPicker": {
+        "label": "메시지 태그",
+        "description": "선택한 메시지에 태그를 추가하거나 제거합니다"
+      },
       "replyAllFromSelection": {
         "description": "선택한 메시지에 전체 답장",
         "label": "선택 메일에 전체 답장"

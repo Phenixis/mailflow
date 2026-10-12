@@ -310,8 +310,8 @@ export const api = {
 
   // Mail
   getMessages: (params) => {
-    const tag = getTagFilter();
-    const qs = new URLSearchParams(tag ? { ...params, tag } : params).toString();
+    const { keys, mode } = getTagFilter();
+    const qs = new URLSearchParams(keys.length ? { ...params, tag: keys.join(','), tagMode: mode } : params).toString();
     return request('GET', `/mail/messages?${qs}`);
   },
   getMessage: (id) => request('GET', `/mail/messages/${id}`),
@@ -524,6 +524,7 @@ export const api = {
   tagDelete: (id) => request('DELETE', `/tags/definitions/${id}`),
   tagsForMessages: (ids) => request('GET', `/tags/messages?ids=${ids.join(',')}`),
   tagSet: (messageId, tagId, applied) => request('PUT', `/tags/messages/${messageId}/tags/${tagId}`, { applied }),
+  tagBulk: (messageIds, tagId, applied) => request('POST', '/tags/messages/bulk', { messageIds, tagId, applied }),
 
   // GTD — Inbox-Zero pet. Import uploads your own pet (pet.json text + a base64 spritesheet)
   // and caches it server-side; meta returns the animation descriptor; the sheet URL is used

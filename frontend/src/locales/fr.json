@@ -610,6 +610,10 @@
         "label": "Ouvrir le sélecteur de dossiers",
         "description": "Copier le message sélectionné dans un dossier"
       },
+      "openTagPicker": {
+        "label": "Taguer le message",
+        "description": "Ajouter ou retirer des tags sur le message sélectionné"
+      },
       "replyAllFromSelection": {
         "label": "Répondre à tous depuis la sélection",
         "description": "Répondre à tous les destinataires du message sélectionné"

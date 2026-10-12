@@ -13,6 +13,7 @@ import { dispatchHoveredGtdShortcut } from '../utils/gtdHoveredRow.js';
 import { runMailboxShortcut, canRunMailboxShortcut, browserShortcutFallback } from '../utils/visibleMailboxes.js';
 import { canRunSelectedAction, canRunGlobalAction } from '../utils/shortcutApplicability.js';
 import { selectedPickerMessage } from '../utils/labelPicker.js';
+import TagPickerPopup from '../tags/TagPickerPopup.jsx';
 import { applyMarkRead } from '../utils/markRead.js';
 import { buildKeyMap, resolveShortcutAction, shortcutActionText, getEffectiveShortcuts, getGroupedActions, parseModKey, modLabel, SPECIAL_KEYS, SPECIAL_KEY_LABELS } from '../utils/defaultShortcuts.js';
 import Sidebar from './Sidebar.jsx';
@@ -126,6 +127,7 @@ export default function MailApp() {
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [labelPickerMessage, setLabelPickerMessage] = useState(null);
+  const [tagPickerMessage, setTagPickerMessage] = useState(null);
   const labelPickerRef = useRef(null);
   useEffect(() => { labelPickerRef.current = labelPickerMessage; }, [labelPickerMessage]);
   const isMobile = useMobile();
@@ -686,6 +688,15 @@ export default function MailApp() {
   }, []);
 
   useEffect(() => {
+    const openTagPicker = () => {
+      const message = selectedPickerMessage(useStore.getState());
+      if (message) setTagPickerMessage(message);
+    };
+    shortcutBus.on('openTagPicker', openTagPicker);
+    return () => shortcutBus.off('openTagPicker', openTagPicker);
+  }, []);
+
+  useEffect(() => {
     const actions = ['toggleLeftSidebar', ...Array.from({ length: 9 }, (_, i) => `goVisibleMailbox${i + 1}`)];
     const handlers = actions.map(action => {
       const handler = () => runMailboxShortcut(action, useStore.getState(), document.querySelector('[data-mailbox-sidebar]'));
@@ -924,6 +935,7 @@ export default function MailApp() {
       <Suspense fallback={null}>{hasNativeBridge && <ElectronNotificationBridge />}</Suspense>
       <NotificationToasts />
       <PluginRuntime />
+      {tagPickerMessage && <TagPickerPopup message={tagPickerMessage} onClose={() => setTagPickerMessage(null)} />}
       <CommandPalette open={paletteOpen} labelPickerMessage={labelPickerMessage}
         onClose={() => { setPaletteOpen(false); setLabelPickerMessage(null); }} />
 

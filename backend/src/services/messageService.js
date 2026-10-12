@@ -1,7 +1,7 @@
 import { query } from './db.js';
 import { resolveAccountScope } from './unifiedInbox.js';
 
-export async function listMessages({ userId, accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category, tag }) {
+export async function listMessages({ userId, accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category, tag, tagMode }) {
   const accountsResult = await query(
     'SELECT id, include_in_unified_inbox FROM email_accounts WHERE user_id = $1 AND enabled = true',
     [userId]
@@ -41,13 +41,18 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
     whereConditions.push(`(m.category IS NULL OR m.category = 'primary')`);
   }
 
-  // Tags: keep only messages carrying this tag (by key) for this user. The folder counts below
-  // cannot tell how many match, so a tag filter counts its own rows.
-  const tagKey = typeof tag === 'string' && /^[a-z][a-z0-9_]{0,39}$/.test(tag) ? tag : null;
-  if (tagKey) {
-    whereConditions.push(`EXISTS (SELECT 1 FROM message_tags mt JOIN tag_definitions d ON d.id = mt.tag_id
-      WHERE mt.message_id = m.id AND NOT mt.dismissed AND d.user_id = $${p++} AND d.key = $${p++})`);
-    values.push(userId, tagKey);
+  // Tags: keep only messages carrying the given tag(s) (comma-separated keys, up to 10) for this user:
+  // any one of them (default) or all of them (tagMode 'all'). The folder counts below cannot tell how
+  // many match, so a tag filter counts its own rows.
+  const tagKeys = typeof tag === 'string'
+    ? [...new Set(tag.split(',').filter(Boolean))].slice(0, 10)
+    : [];
+  const tagFiltered = tagKeys.length > 0 && tagKeys.every((k) => /^[a-z][a-z0-9_]{0,39}$/.test(k));
+  if (tagFiltered) {
+    const needed = tagMode === 'all' ? tagKeys.length : 1;
+    whereConditions.push(`(SELECT COUNT(DISTINCT d.key) FROM message_tags mt JOIN tag_definitions d ON d.id = mt.tag_id
+      WHERE mt.message_id = m.id AND NOT mt.dismissed AND d.user_id = $${p++} AND d.key = ANY($${p++}::text[])) >= $${p++}`);
+    values.push(userId, tagKeys, needed);
   }
 
   // #407: hide UID-only placeholder rows whose envelope has not been fetched yet. During a
@@ -65,7 +70,7 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
 
   let total = 0;
   try {
-    if (tagKey) {
+    if (tagFiltered) {
       const r = await query(`SELECT COUNT(*)::int AS n FROM messages m WHERE ${where}`, [...values]);
       total = r.rows[0]?.n ?? 0;
     } else if (isSpecificAccount) {

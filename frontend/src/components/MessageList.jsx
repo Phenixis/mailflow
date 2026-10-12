@@ -34,6 +34,7 @@ import { shortcutBus } from '../utils/shortcutBus.js';
 import { createLatestRequest } from '../utils/latestRequest.js';
 import { RowTagPills } from '../tags/TagPills.jsx';
 import TagFilterBar from '../tags/TagFilterBar.jsx';
+import TagBulkButton from '../tags/TagBulkButton.jsx';
 import { pendingMarkReadMap, completedMarkReadMap, setPending } from '../utils/pendingReads.js';
 import { applyDeleteGuard, clearDeleteGuard, clearPendingDelete, setCompletedDelete, setPendingDelete, threadDeleteGuardKey } from '../utils/pendingDeletes.js';
 import {
@@ -3641,6 +3642,8 @@ export default function MessageList() {
               </svg>
             </BulkBtn>
 
+            <TagBulkButton ids={[...selectedIds]} Btn={BulkBtn} />
+
             {/* Move button + folder picker */}
             <div style={{ position: 'relative' }} ref={folderPickerRef}>
               <BulkBtn
@@ -3991,6 +3994,7 @@ export default function MessageList() {
             defaultSnoozeView={contextMenu.defaultSnoozeView}
             onClose={() => setContextMenu(null)}
             onAction={(action, data) => handleContextAction(action, contextMenu.message, data)}
+            tagTargetIds={selectedIds.size > 1 && selectedIds.has(contextMenu.message.id) ? [...selectedIds] : null}
           />
         )}
 

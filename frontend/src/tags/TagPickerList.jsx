@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../utils/api.js';
-import { useMessageTags, useTagCounts, invalidateTags } from './tagStore.js';
+import { useMessageTags, useTagCounts, invalidateTags, useTagDefinitionsRevision } from './tagStore.js';
 import { useStore } from '../store/index.js';
 import { useTranslation } from 'react-i18next';
 
@@ -15,7 +15,8 @@ export default function TagPickerList({ messageIds, hotkeys = false }) {
   const current = useMessageTags(messageIds[0]);
   const counts = useTagCounts(messageIds);
 
-  useEffect(() => { api.tagDefinitions().then((d) => setDefs(d.filter((x) => x.enabled))).catch((e) => setError(e.message)); }, []);
+  const revision = useTagDefinitionsRevision();
+  useEffect(() => { api.tagDefinitions().then((d) => setDefs(d.filter((x) => x.enabled))).catch((e) => setError(e.message)); }, [revision]);
 
   // Several messages get a toast saying what changed (the checkbox is feedback enough for one).
   const notify = (title, type) => useStore.getState().addNotification({ type, title, body: '' });

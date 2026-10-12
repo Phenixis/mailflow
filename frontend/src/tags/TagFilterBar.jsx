@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { api } from '../utils/api.js';
 import { useStore } from '../store/index.js';
+import { useTagDefinitionsRevision } from './tagStore.js';
 import { getTagFilter, setTagFilterState, subscribeTagFilter } from './filterState.js';
 import { useTranslation } from 'react-i18next';
 
@@ -16,7 +17,8 @@ export default function TagFilterBar() {
   const { t } = useTranslation();
   const { keys, mode } = useSyncExternalStore(subscribeTagFilter, getTagFilter);
   const [defs, setDefs] = useState([]);
-  useEffect(() => { api.tagDefinitions().then((d) => setDefs(d.filter((x) => x.enabled))).catch(() => {}); }, []);
+  const revision = useTagDefinitionsRevision();
+  useEffect(() => { api.tagDefinitions().then((d) => setDefs(d.filter((x) => x.enabled))).catch(() => {}); }, [revision]);
   if (!defs.length) return null;
 
   const chip = (selected, color) => ({

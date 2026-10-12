@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import TagPickerList from './TagPickerList.jsx';
 import { useMobile } from '../hooks/useMobile.js';
 import { useT } from './strings.js';
@@ -9,10 +10,8 @@ export default function TagBulkButton({ ids, Btn }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const isMobile = useMobile();
-  // A phone gets a bottom sheet (an absolute popover under a small button runs off the screen).
-  const panel = isMobile
-    ? { position: 'fixed', left: 8, right: 8, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)', maxHeight: '60vh' }
-    : { position: 'absolute', top: '100%', right: 0, minWidth: 240, maxHeight: 320 };
+  const list = <TagPickerList messageIds={ids} />;
+
   return (
     <div style={{ position: 'relative' }}>
       <Btn title={t('menu.tags')} onClick={() => setOpen(!open)}>
@@ -21,16 +20,41 @@ export default function TagBulkButton({ ids, Btn }) {
           <line x1="7" y1="7" x2="7.01" y2="7" />
         </svg>
       </Btn>
-      {open && (
+      {open && !isMobile && (
         <>
           <div onClick={() => setOpen(false)} aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
           <div style={{
-            ...panel, zIndex: 1000, overflowY: 'auto',
+            position: 'absolute', top: '100%', right: 0, zIndex: 1000, minWidth: 240, maxHeight: 320, overflowY: 'auto',
             background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: 'var(--shadow-popover)',
           }}>
-            <TagPickerList messageIds={ids} />
+            {list}
           </div>
         </>
+      )}
+      {/* A phone gets a bottom sheet. It is rendered on <body>: inside the sticky toolbar it would be
+          stuck under the compose button, whose layer sits above the toolbar's. Same layers as the
+          folder picker sheet (above the compose button, below dialogs). */}
+      {open && isMobile && createPortal(
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'var(--overlay-scrim)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+          />
+          <div
+            role="dialog"
+            aria-label={t('menu.tags')}
+            style={{
+              position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 3001, maxHeight: '70vh', overflowY: 'auto',
+              background: 'var(--bg-secondary)', borderRadius: '16px 16px 0 0',
+              boxShadow: '0 -4px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+            }}
+          >
+            <div style={{ padding: '12px 14px 4px', fontSize: 12, fontWeight: 600 }}>{t('menu.tags')}</div>
+            {list}
+          </div>
+        </>,
+        document.body
       )}
     </div>
   );

@@ -18,6 +18,9 @@
 import { getMailEngine } from './mailEngine.js';
 import * as labelsWrite from '../services/labels.js';
 import { archiveInboxCopy as _archiveInboxCopy } from '../services/archiveInbox.js';
+import * as tagsStore from '../services/tags/store.js';
+import { encrypt, decrypt } from '../services/encryption.js';
+import { httpRequest as _httpRequest } from './network.js';
 
 // ── Labels (read) ─────────────────────────────────────────────────────────────
 // Thread-aware read over a set of label folders: heads grouped by label with thread-level
@@ -103,3 +106,36 @@ export {
   getMessageAnnotations,
   setMessageAnnotation,
 } from '../services/mailAccess.js';
+
+// ── Tags ──────────────────────────────────────────────────────────────────────
+// Read the user's tag definitions, create a tag if missing, put a tag on a message and take it back.
+// A plugin's tags carry its id as their `source`; it can only remove what it applied, and it never
+// overrides a tag the user set or removed by hand (applyTag then reports 'skipped').
+export const listTagDefinitions = (userId) => tagsStore.listDefinitions(userId);
+export const ensureTagDefinition = (userId, definition) => tagsStore.ensureDefinition(userId, definition);
+
+function notifyTagsChanged(userId, messageId) {
+  try { getMailEngine().broadcast({ type: 'tags_updated', messageIds: [messageId] }, userId); } catch { /* best effort */ }
+}
+export async function applyTag(pluginId, userId, messageId, tagKey) {
+  const result = await tagsStore.applyTag(userId, messageId, tagKey, pluginId);
+  if (result === 'applied') notifyTagsChanged(userId, messageId);
+  return result;
+}
+export async function removeTag(pluginId, userId, messageId, tagKey) {
+  const removed = await tagsStore.removeTag(userId, messageId, tagKey, pluginId);
+  if (removed) notifyTagsChanged(userId, messageId);
+  return removed;
+}
+
+// Newest INBOX messages of the user's accounts, optionally only those the plugin has not annotated.
+export const listInboxMessageIds = (userId, accountIds, limit, options) => tagsStore.listInboxMessageIds(userId, accountIds, limit, options);
+
+// ── Secrets ───────────────────────────────────────────────────────────────────
+// Encrypt/decrypt a credential with the installation's key (the same one that protects mailbox passwords).
+export const encryptSecret = (plaintext) => encrypt(plaintext);
+export const decryptSecret = (value) => decrypt(value);
+
+// ── Network ───────────────────────────────────────────────────────────────────
+// Make an HTTPS request to a host the plugin declared in its manifest's `network.hosts`.
+export const httpRequest = (pluginId, request) => _httpRequest(pluginId, request);

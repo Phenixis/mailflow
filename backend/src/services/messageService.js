@@ -15,7 +15,7 @@ const snoozedElsewhereSql = (accounts) =>
   + ' AND EXISTS (SELECT 1 FROM snoozed_messages own WHERE own.account_id = m.account_id'
   + ' AND own.message_id_header = m.message_id AND own.snoozed_folder = m.folder))';
 
-export async function listMessages({ userId, accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category }) {
+export async function listMessages({ userId, accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category, tag }) {
   const accountsResult = await query(
     'SELECT id, include_in_unified_inbox FROM email_accounts WHERE user_id = $1 AND enabled = true',
     [userId]
@@ -63,6 +63,15 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
     whereConditions.push(`(m.category IS NULL OR m.category = 'primary')`);
   }
 
+  // Tags: keep only messages carrying this tag (by key) for this user. The folder counts below
+  // cannot tell how many match, so a tag filter counts its own rows.
+  const tagKey = typeof tag === 'string' && /^[a-z][a-z0-9_]{0,39}$/.test(tag) ? tag : null;
+  if (tagKey) {
+    whereConditions.push(`EXISTS (SELECT 1 FROM message_tags mt JOIN tag_definitions d ON d.id = mt.tag_id
+      WHERE mt.message_id = m.id AND NOT mt.dismissed AND d.user_id = $${p++} AND d.key = $${p++})`);
+    values.push(userId, tagKey);
+  }
+
   // #407: hide UID-only placeholder rows whose envelope has not been fetched yet. During a
   // rapid archive/reconcile overlap a UID can be listed before its envelope arrives, rendering
   // as an "Unknown / (no subject)" ghost row. A genuine message always carries at least a
@@ -78,11 +87,11 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
 
   let total = 0;
   try {
-    if (safeCategory && !isSnoozedView) {
-      // A category tab lists only that category's mail; the folder's counts are of all its mail,
-      // so the list offered pages, or a "Load more", with nothing on them (#611). Counted by
-      // row, as the threaded list is.
-      const r = await query(`SELECT COUNT(*)::int AS n FROM messages m WHERE ${where}`, values);
+    if ((safeCategory && !isSnoozedView) || tagKey) {
+      // A category tab, or a tag filter, lists only part of the folder's mail; the folder's counts
+      // are of all its mail, so the list offered pages, or a "Load more", with nothing on them
+      // (#611). Counted by row, as the threaded list is.
+      const r = await query(`SELECT COUNT(*)::int AS n FROM messages m WHERE ${where}`, [...values]);
       total = r.rows[0]?.n ?? 0;
     } else if (isSpecificAccount) {
       const r = await query(

@@ -5118,6 +5118,7 @@ function MessageRow({ message, selected, lastViewed, isChecked, selectionMode, s
           </span>
           <ReplyDraftIndicator message={message} listRow />
           <SpamBadge message={message} onClick={onExplainSpam} />
+          <RowTagPills message={message} />
         </div>
 
         {/* Row 3: Snippet */}

@@ -128,6 +128,10 @@ export async function removeTag(pluginId, userId, messageId, tagKey) {
   return removed;
 }
 
+// How the user tagged their own mail: { positives, negatives } as [{ subject, sender }], to show a
+// classifier what a tag means. Messages carrying any of `excludeIfTagged` are left out.
+export const listTagExamples = (userId, tagKey, options) => tagsStore.listTagExamples(userId, tagKey, options);
+
 // Newest INBOX messages of the user's accounts, optionally only those the plugin has not annotated.
 export const listInboxMessageIds = (userId, accountIds, limit, options) => tagsStore.listInboxMessageIds(userId, accountIds, limit, options);
 

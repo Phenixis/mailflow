@@ -154,3 +154,27 @@ export async function listInboxMessageIds(userId, accountIds, limit, { withoutAn
   );
   return rows.map((r) => r.id);
 }
+
+// Examples of what a tag means, taken from how the user tagged their own mail: subjects (with the
+// sender's name) of messages the user tagged by hand (positives) and of messages where the user
+// removed the tag (negatives), newest first. Messages that carry any of `excludeIfTagged` (e.g. a
+// privacy tag) are left out so private subjects never leave through here.
+export async function listTagExamples(userId, tagKey, { excludeIfTagged = [], limit = 8 } = {}) {
+  const run = async (dismissed) => {
+    const { rows } = await query(
+      `SELECT m.subject, m.from_name
+         FROM message_tags mt
+         JOIN tag_definitions d ON d.id = mt.tag_id AND d.user_id = $1 AND d.key = $2
+         JOIN messages m ON m.id = mt.message_id
+         JOIN email_accounts a ON a.id = m.account_id AND a.user_id = $1
+        WHERE mt.source = 'manual' AND mt.dismissed = $3 AND COALESCE(m.subject, '') <> ''
+          AND NOT EXISTS (
+            SELECT 1 FROM message_tags x JOIN tag_definitions xd ON xd.id = x.tag_id
+             WHERE x.message_id = m.id AND NOT x.dismissed AND xd.user_id = $1 AND xd.key = ANY($4::text[]))
+        ORDER BY mt.created_at DESC LIMIT $5`,
+      [userId, tagKey, dismissed, excludeIfTagged, limit]
+    );
+    return rows.map((r) => ({ subject: r.subject, sender: r.from_name || '' }));
+  };
+  return { positives: await run(false), negatives: await run(true) };
+}

@@ -33,3 +33,9 @@ test('the Jev settings reload their tag list when the definitions change', () =>
   assert.match(source, /useTagDefinitionsRevision\(\)/);
   assert.match(source, /bumpTagDefinitions\(\)/, 'creating the default tags announces them to the other screens');
 });
+
+test('the Why panel tells when a second look was impossible because the body could not be retrieved', () => {
+  const source = readFileSync(new URL('../plugins/jev-tags/JevWhy.jsx', import.meta.url), 'utf8');
+  assert.match(source, /run\?\.bodyMissing/);
+  assert.match(source, /jevTags\.why\.bodyMissing/);
+});

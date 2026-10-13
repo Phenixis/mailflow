@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const api = vi.hoisted(() => ({
-  loadOwnedMessage: vi.fn(), applyTag: vi.fn(), removeTag: vi.fn(), setMessageAnnotation: vi.fn(),
+  loadOwnedMessage: vi.fn(), applyTag: vi.fn(), removeTag: vi.fn(), setMessageAnnotation: vi.fn(), ensureMessageBody: vi.fn(),
   logger: { warn: vi.fn(), debug: vi.fn() },
 }));
 vi.mock('../api.js', () => api);
@@ -25,6 +25,33 @@ beforeEach(() => {
   api.loadOwnedMessage.mockResolvedValue(message);
   cfg.loadSettings.mockResolvedValue({ ...DEFAULT_SETTINGS, apiKey: 'k' });
   cfg.activeEntries.mockResolvedValue(entries);
+});
+
+describe('classifyMessage - body not stored yet (Gmail)', () => {
+  it('fetches the body through core when a second look needs it, and uses it for pass 2', async () => {
+    const stored = { ...message, body_text: null, snippet: '' };
+    api.loadOwnedMessage.mockResolvedValueOnce(stored).mockResolvedValue({ ...message, body_text: 'Campus closed tomorrow.' });
+    api.ensureMessageBody.mockResolvedValue('fetched');
+    const askImpl = vi.fn(async (req) => ({
+      scores: Object.fromEntries(Object.keys(req.questions).map((k) => [k, k === 'private' ? 0.1 : (req.state.body_excerpt ? 0.9 : 0.5)])), usage: { input: 1, output: 1 }, model: 'm',
+    }));
+    cfg.activeEntries.mockResolvedValue(entries);
+    const out = await classifyMessage('u1', 'm1', { askImpl, today: '2026-10-13' });
+    expect(api.ensureMessageBody).toHaveBeenCalledWith('u1', 'm1');
+    expect(askImpl).toHaveBeenCalledTimes(2);
+    expect(askImpl.mock.calls[1][0].state.body_excerpt).toBe('Campus closed tomorrow.');
+    expect(out.outcome.bodyMissing).toBe(false);
+    expect(api.setMessageAnnotation.mock.calls[0][3].run).toMatchObject({ bodySent: true, bodyMissing: false });
+  });
+
+  it('records that the body was missing when it cannot be fetched', async () => {
+    api.loadOwnedMessage.mockResolvedValue({ ...message, body_text: null, snippet: '' });
+    api.ensureMessageBody.mockResolvedValue('failed');
+    const askImpl = vi.fn(async (req) => ({ scores: Object.fromEntries(Object.keys(req.questions).map((k) => [k, k === 'private' ? 0.1 : 0.5])), usage: { input: 1, output: 1 }, model: 'm' }));
+    await classifyMessage('u1', 'm1', { askImpl });
+    expect(askImpl).toHaveBeenCalledTimes(1);
+    expect(api.setMessageAnnotation.mock.calls[0][3].run).toMatchObject({ bodySent: false, bodyMissing: true });
+  });
 });
 
 describe('classifyMessage', () => {

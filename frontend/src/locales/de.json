@@ -1942,6 +1942,7 @@
       "runNoBody": "Text nicht gesendet",
       "runPrivate": "Privat: Text nicht gesendet",
       "runTokens": "{{n}} Tokens",
+      "bodyMissing": "Einige Tags waren unsicher, aber der Nachrichtentext konnte für eine zweite Prüfung nicht abgerufen werden.",
       "reclassify": "Neu klassifizieren"
     },
     "conn": {

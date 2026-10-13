@@ -21,6 +21,7 @@ import { archiveInboxCopy as _archiveInboxCopy } from '../services/archiveInbox.
 import * as tagsStore from '../services/tags/store.js';
 import { encrypt, decrypt } from '../services/encryption.js';
 import { httpRequest as _httpRequest } from './network.js';
+import { ensureMessageBody as _ensureMessageBody } from '../services/messageBody.js';
 
 // ── Labels (read) ─────────────────────────────────────────────────────────────
 // Thread-aware read over a set of label folders: heads grouped by label with thread-level
@@ -142,3 +143,9 @@ export const decryptSecret = (value) => decrypt(value);
 // ── Network ───────────────────────────────────────────────────────────────────
 // Make an HTTPS request to a host the plugin declared in its manifest's `network.hosts`.
 export const httpRequest = (pluginId, request) => _httpRequest(pluginId, request);
+
+// ── Message body ──────────────────────────────────────────────────────────────
+// Make sure the body of a message the user owns is cached (fetching it like opening the message does, for
+// providers that store only the envelope on arrival). Resolves to 'cached' | 'fetched' | 'empty' | 'missing' |
+// 'failed'; never throws. Read the body afterwards with loadOwnedMessage.
+export const ensureMessageBody = (userId, messageId, options) => _ensureMessageBody(getMailEngine(), userId, messageId, options);

@@ -1942,6 +1942,7 @@
       "runNoBody": "Body not sent",
       "runPrivate": "Private: body not sent",
       "runTokens": "{{n}} tokens",
+      "bodyMissing": "Some tags were unsure, but the message body could not be retrieved for a second look.",
       "reclassify": "Reclassify"
     },
     "conn": {

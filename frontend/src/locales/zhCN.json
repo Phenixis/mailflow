@@ -1942,6 +1942,7 @@
       "runNoBody": "未发送正文",
       "runPrivate": "私密：未发送正文",
       "runTokens": "{{n}} 个 token",
+      "bodyMissing": "部分标签不确定，但无法获取邮件正文进行第二次判断。",
       "reclassify": "重新分类"
     },
     "conn": {

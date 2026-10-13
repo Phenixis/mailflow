@@ -23,7 +23,7 @@ export async function classifyMessage(userId, messageId, { askImpl = askJev, tod
   if (!entries.length) return { status: 'no-tags' };
   try {
     const outcome = await classify({
-      message, entries: await withLearnedExamples(userId, entries, settings.privacyTagKey), privacyKey: settings.privacyTagKey, settings, today,
+      message, entries: await withLearnedExamples(userId, entries), privacyKey: settings.privacyTagKey, settings, today,
       ask: (state, questions) => askImpl({ apiKey: settings.apiKey, model: settings.model, state, questions }),
     });
     const answers = {};

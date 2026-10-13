@@ -1978,7 +1978,7 @@
       "off": "Jev no asigna esta etiqueta",
       "toggle": "Jev",
       "learn": "Aprender también del correo que etiqueté a mano (sus asuntos se envían como ejemplos)",
-      "learnNote": "La etiqueta de privacidad nunca aprende, y el correo que la lleva nunca se usa como ejemplo.",
+      "learnNote": "Solo se usan como ejemplos los asuntos y los nombres de remitente, nunca el contenido de los mensajes. También se puede usar el correo etiquetado como privado: su asunto y remitente ya se envían para clasificarlo.",
       "question": "La pregunta de sí/no que responde Jev (opcional: déjala vacía para usar la predeterminada mostrada)",
       "yesMeans": "Sí significa…",
       "yesExamples": "Ejemplos de sí (uno por línea)",

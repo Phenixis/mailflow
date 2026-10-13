@@ -1997,7 +1997,7 @@
       "off": "Jev nie przypisuje tego tagu",
       "toggle": "Jev",
       "learn": "Ucz się także z poczty, którą otagowałem ręcznie (jej tematy są wysyłane jako przykłady)",
-      "learnNote": "Tag prywatności nigdy się nie uczy, a poczta z tym tagiem nigdy nie jest używana jako przykład.",
+      "learnNote": "Jako przykłady używane są tylko tematy i nazwy nadawców, nigdy treść wiadomości. Można też użyć poczty otagowanej jako prywatna: jej temat i nadawca i tak są wysyłane w celu klasyfikacji.",
       "question": "Pytanie tak/nie, na które odpowiada Jev (opcjonalnie: pozostaw puste, aby użyć wyświetlonego domyślnego)",
       "yesMeans": "Tak oznacza…",
       "yesExamples": "Przykłady „tak” (po jednym w wierszu)",

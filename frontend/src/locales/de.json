@@ -1978,7 +1978,7 @@
       "off": "Jev vergibt diesen Tag nicht",
       "toggle": "Jev",
       "learn": "Auch aus von mir manuell getaggten E-Mails lernen (deren Betreffzeilen werden als Beispiele gesendet)",
-      "learnNote": "Das Datenschutz-Tag lernt nie, und E-Mails mit diesem Tag werden nie als Beispiel verwendet.",
+      "learnNote": "Als Beispiele dienen nur Betreffzeilen und Absendernamen, nie der Inhalt von Nachrichten. Auch als privat getaggte E-Mails können verwendet werden: Betreff und Absender werden ohnehin zur Klassifizierung gesendet.",
       "question": "Die Ja/Nein-Frage, die Jev beantwortet (optional: leer lassen, um die angezeigte Standardfrage zu verwenden)",
       "yesMeans": "Ja bedeutet …",
       "yesExamples": "Beispiele für Ja (eines pro Zeile)",

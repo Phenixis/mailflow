@@ -1978,7 +1978,7 @@
       "off": "Jev non assegna questo tag",
       "toggle": "Jev",
       "learn": "Impara anche dalla posta che ho taggato a mano (i loro oggetti vengono inviati come esempi)",
-      "learnNote": "Il tag di riservatezza non impara mai, e la posta che lo porta non viene mai usata come esempio.",
+      "learnNote": "Come esempi si usano solo oggetti e nomi dei mittenti, mai il contenuto dei messaggi. Si può usare anche la posta taggata come privata: il suo oggetto e mittente vengono comunque inviati per classificarla.",
       "question": "La domanda sì/no a cui risponde Jev (facoltativa: lasciala vuota per usare quella predefinita mostrata)",
       "yesMeans": "Sì significa…",
       "yesExamples": "Esempi di sì (uno per riga)",

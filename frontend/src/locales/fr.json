@@ -1978,7 +1978,7 @@
       "off": "Jev n'attribue pas ce tag",
       "toggle": "Jev",
       "learn": "Apprendre aussi des mails que j'ai tagués à la main (leurs objets sont envoyés comme exemples)",
-      "learnNote": "Le tag de confidentialité n'apprend jamais, et un mail qui le porte n'est jamais utilisé comme exemple.",
+      "learnNote": "Seuls les objets et noms d'expéditeur servent d'exemples, jamais le contenu des mails. Les mails tagués privés peuvent aussi servir : leur objet et leur expéditeur sont de toute façon envoyés pour les classer.",
       "question": "La question oui/non posée à Jev (facultatif : laissez vide pour utiliser celle affichée par défaut)",
       "yesMeans": "Oui signifie…",
       "yesExamples": "Exemples de oui (un par ligne)",

@@ -23,14 +23,14 @@ describe('formatExample', () => {
 });
 
 describe('learnedExamples', () => {
-  it('asks core for the user\'s own tagging, never including messages carrying the privacy tag, and caches briefly', async () => {
+  it('asks core for the user\'s own tagging with no exclusion (private mail counts), and caches briefly', async () => {
     list.mockResolvedValue({ positives: [{ subject: 'Flight', sender: 'Airline' }], negatives: [{ subject: 'Newsletter', sender: '' }] });
-    const first = await learnedExamples('u1', 'travel', 'private', { now: 1000, list });
+    const first = await learnedExamples('u1', 'travel', { now: 1000, list });
     expect(first).toEqual({ positives: ['Flight — Airline'], negatives: ['Newsletter'] });
-    expect(list).toHaveBeenCalledWith('u1', 'travel', { excludeIfTagged: ['private'], limit: 8 });
-    await learnedExamples('u1', 'travel', 'private', { now: 30_000, list });
+    expect(list).toHaveBeenCalledWith('u1', 'travel', { limit: 8 });
+    await learnedExamples('u1', 'travel', { now: 30_000, list });
     expect(list).toHaveBeenCalledTimes(1);
-    await learnedExamples('u1', 'travel', 'private', { now: 70_000, list }); // expired: new tags are picked up
+    await learnedExamples('u1', 'travel', { now: 70_000, list }); // expired: new tags are picked up
     expect(list).toHaveBeenCalledTimes(2);
   });
 });
@@ -42,20 +42,20 @@ describe('withLearnedExamples', () => {
     { key: 'quiet', question: { instructions: 'q', learn: false } },
   ];
 
-  it('folds learned examples into learning tags only: not the privacy tag, not a tag that opted out', async () => {
+  it('folds learned examples into every tag that learns, the privacy tag included, but not a tag that opted out', async () => {
     list.mockResolvedValue({ positives: [{ subject: 'Flight', sender: 'Airline' }], negatives: [{ subject: 'Newsletter', sender: 'News' }] });
-    const out = await withLearnedExamples('u1', entries, 'private', { list });
-    expect(out[0]).toBe(entries[0]);
+    const out = await withLearnedExamples('u1', entries, { list });
     expect(out[2]).toBe(entries[2]);
+    expect(out[0].question.true_examples).toEqual(['own', 'Flight — Airline']);
     expect(out[1].question.true_examples).toEqual(['hand', 'Flight — Airline']);
     expect(out[1].question.false_examples).toEqual(['Newsletter — News']);
-    expect(list).toHaveBeenCalledTimes(1);
+    expect(list).toHaveBeenCalledTimes(2); // private and travel
     expect(entries[1].question.true_examples).toEqual(['hand']); // the stored question is not mutated
   });
 
   it('leaves a tag untouched when the user has not tagged anything yet', async () => {
     list.mockResolvedValue({ positives: [], negatives: [] });
-    const out = await withLearnedExamples('u1', entries, 'private', { list });
+    const out = await withLearnedExamples('u1', entries, { list });
     expect(out[1]).toBe(entries[1]);
   });
 });

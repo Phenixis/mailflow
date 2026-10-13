@@ -2049,7 +2049,7 @@
       "off": "O Jev não atribui esta tag",
       "toggle": "Jev",
       "learn": "Aprender também com os e-mails que marquei manualmente (os assuntos são enviados como exemplos)",
-      "learnNote": "A tag de privacidade nunca aprende, e os e-mails que a têm nunca são usados como exemplo.",
+      "learnNote": "Apenas assuntos e nomes de remetentes são usados como exemplos, nunca o conteúdo das mensagens. E-mails marcados como privados também podem ser usados: o assunto e o remetente deles já são enviados para classificá-los.",
       "question": "A pergunta de sim/não que o Jev responde (opcional: deixe em branco para usar a padrão exibida)",
       "yesMeans": "Sim significa…",
       "yesExamples": "Exemplos de sim (um por linha)",

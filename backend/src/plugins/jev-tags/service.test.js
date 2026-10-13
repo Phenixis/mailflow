@@ -33,7 +33,7 @@ describe('classifyMessage', () => {
       e.key === 'urgent' ? { ...e, question: { ...e.question, true_examples: ['Flight tomorrow — Airline'] } } : e)));
     const askImpl = scoresAsk({});
     await classifyMessage('u1', 'm1', { askImpl, today: '2026-10-12' });
-    expect(examples.withLearnedExamples).toHaveBeenCalledWith('u1', entries, 'private');
+    expect(examples.withLearnedExamples).toHaveBeenCalledWith('u1', entries);
     expect(askImpl.mock.calls[0][0].questions.urgent.criteria.true.examples).toEqual(['Flight tomorrow — Airline']);
   });
 

@@ -2068,7 +2068,7 @@
       "off": "Jev tento štítek nepřiřazuje",
       "toggle": "Jev",
       "learn": "Učit se i z pošty, kterou jsem označil ručně (jejich předměty se odesílají jako příklady)",
-      "learnNote": "Štítek soukromí se nikdy neučí a pošta s ním se nikdy nepoužívá jako příklad.",
+      "learnNote": "Jako příklady se používají jen předměty a jména odesílatelů, nikdy obsah zpráv. Použít lze i poštu označenou jako soukromou: její předmět a odesílatel se stejně odesílají k zařazení.",
       "question": "Otázka ano/ne, na kterou Jev odpovídá (volitelné: nechte prázdné pro zobrazenou výchozí)",
       "yesMeans": "Ano znamená…",
       "yesExamples": "Příklady pro ano (jeden na řádek)",

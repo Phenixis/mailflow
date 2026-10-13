@@ -48,6 +48,7 @@ export default function JevWhy({ message }) {
                 : `${t(detail.run.isPrivate ? 'jevTags.why.runPrivate' : detail.run.bodySent ? 'jevTags.why.runBody' : 'jevTags.why.runNoBody')} - ${t('jevTags.why.runTokens', { n: detail.run.input ?? 0 })}`}
             </div>
           )}
+          {detail?.run?.bodyMissing && <div style={{ marginTop: 4, color: 'var(--text-tertiary)' }}>{t('jevTags.why.bodyMissing')}</div>}
           <button onClick={reclassify} style={{ marginTop: 6, fontSize: 11, cursor: 'pointer' }}>{t('jevTags.why.reclassify')}</button>
         </div>
       )}

@@ -2013,6 +2013,7 @@
       "runNoBody": "본문을 전송하지 않음",
       "runPrivate": "비공개: 본문을 전송하지 않음",
       "runTokens": "토큰 {{n}}개",
+      "bodyMissing": "일부 태그가 불확실했지만 두 번째 검토를 위한 메시지 본문을 가져오지 못했습니다.",
       "reclassify": "다시 분류"
     },
     "conn": {

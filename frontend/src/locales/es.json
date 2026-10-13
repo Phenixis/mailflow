@@ -2013,6 +2013,7 @@
       "runNoBody": "Cuerpo no enviado",
       "runPrivate": "Privado: cuerpo no enviado",
       "runTokens": "{{n}} tokens",
+      "bodyMissing": "Algunas etiquetas eran inciertas, pero no se pudo obtener el cuerpo del mensaje para una segunda revisión.",
       "reclassify": "Reclasificar"
     },
     "conn": {

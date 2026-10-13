@@ -52,7 +52,9 @@ export function bodyExcerpt(message, maxChars) {
 
 // `entries` are the tags to ask about: { key, question: {instructions, true_what, ..., threshold_low?,
 // threshold_high?} }. The one whose key is `privacyKey` is the privacy gate.
-export async function classify({ message, entries, privacyKey, settings, ask, today }) {
+// `loadBody` (optional, async) returns the message once its body has been fetched; it is only called when a
+// second look is needed and the body is not stored yet (Gmail stores the envelope only when mail arrives).
+export async function classify({ message, entries, privacyKey, settings, ask, today, loadBody }) {
   const defs = entries.map((e) => ({ ...e.question, key: e.key }));
   const privacy = defs.find((d) => d.key === privacyKey) || null;
   const low = num(settings.threshold_low);
@@ -61,7 +63,7 @@ export async function classify({ message, entries, privacyKey, settings, ask, to
   const usage = { input: 0, output: 0 };
   const results = new Map(); // tag key -> { tag, score, applied, pass, bodySent }
 
-  if (!defs.length) return { results: [], isPrivate: false, bodySent: false, pass: 1, usage, model: null };
+  if (!defs.length) return { results: [], isPrivate: false, bodySent: false, bodyMissing: false, pass: 1, usage, model: null };
 
   const state = {
     current_date: today,
@@ -96,8 +98,14 @@ export async function classify({ message, entries, privacyKey, settings, ask, to
 
   let pass = 1;
   let bodySent = false;
-  const excerpt = bodyExcerpt(message, num(settings.max_body_chars) ?? 500);
-  if (unsure.length && privacy && !isPrivate && excerpt) {
+  const maxChars = num(settings.max_body_chars) ?? 500;
+  const needsBody = unsure.length > 0 && Boolean(privacy) && !isPrivate;
+  let excerpt = bodyExcerpt(message, maxChars);
+  if (needsBody && !excerpt && loadBody) {
+    try { excerpt = bodyExcerpt((await loadBody()) || {}, maxChars); } catch { /* treated as "no body" below */ }
+  }
+  const bodyMissing = needsBody && !excerpt;
+  if (needsBody && excerpt) {
     const second = track(await ask({ ...state, body_excerpt: excerpt }, toQuestions(unsure)));
     model = second.model ?? model;
     pass = 2;
@@ -112,5 +120,5 @@ export async function classify({ message, entries, privacyKey, settings, ask, to
     }
   }
 
-  return { results: [...results.values()], isPrivate, bodySent, pass, usage, model };
+  return { results: [...results.values()], isPrivate, bodySent, bodyMissing, pass, usage, model };
 }

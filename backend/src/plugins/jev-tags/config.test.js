@@ -66,6 +66,21 @@ describe('questions and defaults', () => {
     expect(q.private.enabled).toBe(true);
   });
 
+  it('fills in the default question where the user only switched Jev on without writing one', async () => {
+    await saveQuestion('u1', 'private', { instructions: '', enabled: true, learn: true, true_examples: [], false_examples: [], true_what: null, false_what: null });
+    await saveQuestion('u1', 'important', { instructions: '', enabled: false, learn: false });
+    await saveQuestion('u1', 'urgent', { instructions: '', true_examples: ['my own example'], enabled: true });
+    await ensureDefaults('u1');
+    const q = await loadQuestions('u1');
+    expect(q.private.instructions).toMatch(/personal or confidential/); // the real privacy question, not "belongs under the tag"
+    expect(q.private.true_examples.length).toBeGreaterThan(0);
+    expect(q.private.enabled).toBe(true);
+    expect(q.important.enabled).toBe(false); // the user's on/off choice is kept
+    expect(q.important.learn).toBe(false);
+    expect(q.urgent.instructions).toBe(''); // the user wrote an example: not blank, left alone
+    expect(q.urgent.true_examples).toEqual(['my own example']);
+  });
+
   it('removes a question', async () => {
     await saveQuestion('u1', 'travel', { instructions: 'q', enabled: true });
     await removeQuestion('u1', 'travel');

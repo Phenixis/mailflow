@@ -2397,7 +2397,7 @@
       "off": "Jev does not assign this tag",
       "toggle": "Jev",
       "learn": "Also learn from the mail I tagged by hand (their subjects are sent as examples)",
-      "learnNote": "The privacy tag never learns, and mail carrying it is never used as an example.",
+      "learnNote": "Only subjects and sender names are used as examples, never message bodies. Mail tagged private can be used too: its subject and sender are already sent to classify it.",
       "question": "The yes/no question Jev answers (optional: leave empty to use the default shown)",
       "yesMeans": "Yes means...",
       "yesExamples": "Examples of yes (one per line)",

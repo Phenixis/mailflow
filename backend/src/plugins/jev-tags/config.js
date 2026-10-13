@@ -47,13 +47,21 @@ export async function removeQuestion(userId, tagKey) {
   await storage.put(PLUGIN_ID, questionsKey(userId), { value: rest, ownerId: userId });
 }
 
-// Create Private / Important / Urgent as tags (when missing) and give each its default question
-// (when it has none). Never overwrites a question the user edited.
+// A question the user never wrote: no text, no examples. Switching Jev on from the row switch creates such a
+// record, and it makes Jev use the generic default question built from the tag's name.
+const isBlankQuestion = (q) => !q || (!q.instructions?.trim() && !q.true_what && !q.false_what
+  && !(q.true_examples || []).length && !(q.false_examples || []).length);
+
+// Create Private / Important / Urgent as tags (when missing) and give each its default question: when it has
+// none, or only a blank one (keeping its on/off and learning choices). Never overwrites a question the user
+// wrote or edited.
 export async function ensureDefaults(userId) {
   const all = await loadQuestions(userId);
   for (const t of DEFAULT_TAGS) {
     await ensureTagDefinition(userId, { key: t.key, name: t.name, color: t.color });
-    if (!all[t.key]) all[t.key] = { ...t.question, enabled: true };
+    if (isBlankQuestion(all[t.key])) {
+      all[t.key] = { ...t.question, enabled: all[t.key]?.enabled ?? true, ...(all[t.key]?.learn === undefined ? {} : { learn: all[t.key].learn }) };
+    }
   }
   await storage.put(PLUGIN_ID, questionsKey(userId), { value: all, ownerId: userId });
 }

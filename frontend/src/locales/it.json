@@ -2361,6 +2361,7 @@
       "runNoBody": "Corpo non inviato",
       "runPrivate": "Privato: corpo non inviato",
       "runTokens": "{{n}} token",
+      "bodyMissing": "Alcuni tag erano incerti, ma non è stato possibile recuperare il corpo del messaggio per un secondo esame.",
       "reclassify": "Riclassifica"
     },
     "conn": {

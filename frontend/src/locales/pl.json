@@ -2380,6 +2380,7 @@
       "runNoBody": "Treść nie została wysłana",
       "runPrivate": "Prywatne: treść nie została wysłana",
       "runTokens": "{{n}} tokenów",
+      "bodyMissing": "Niektóre tagi były niepewne, ale nie udało się pobrać treści wiadomości do ponownej analizy.",
       "reclassify": "Sklasyfikuj ponownie"
     },
     "conn": {

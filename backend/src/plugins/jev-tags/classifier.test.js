@@ -110,6 +110,39 @@ describe('classify', () => {
   });
 });
 
+describe('classify - a body that is not stored yet', () => {
+  const noBody = { ...message, body_text: null, snippet: '' };
+
+  it('fetches the body when a second look is needed and it is missing, then uses it', async () => {
+    const ask = fakeAsk({ private: 0.1, important: 0.59, urgent: 0.49 }, { important: 0.8, urgent: 0.3 });
+    const loadBody = vi.fn(async () => ({ ...message, body_text: 'The campus is closed tomorrow, please read.' }));
+    const out = await classify({ ...base, message: noBody, ask, loadBody });
+    expect(loadBody).toHaveBeenCalledTimes(1);
+    expect(ask).toHaveBeenCalledTimes(2);
+    expect(ask.mock.calls[1][0].body_excerpt).toBe('The campus is closed tomorrow, please read.');
+    expect(byKey(out).important).toMatchObject({ applied: true, pass: 2, bodySent: true });
+    expect(out.bodyMissing).toBe(false);
+  });
+
+  it('does not fetch a body that is already there, or one that must stay private, or when nothing is unsure', async () => {
+    const loadBody = vi.fn();
+    await classify({ ...base, message, ask: fakeAsk({ private: 0.1, important: 0.5, urgent: 0.1 }, { important: 0.7 }), loadBody });
+    await classify({ ...base, message: noBody, ask: fakeAsk({ private: 0.9, important: 0.5, urgent: 0.5 }), loadBody }); // private
+    await classify({ ...base, message: noBody, ask: fakeAsk({ private: 0.1, important: 0.9, urgent: 0.1 }), loadBody }); // sure
+    expect(loadBody).not.toHaveBeenCalled();
+  });
+
+  it('says so when the body could not be fetched, and keeps the first-pass result', async () => {
+    const ask = fakeAsk({ private: 0.1, important: 0.59, urgent: 0.49 });
+    const out = await classify({ ...base, message: noBody, ask, loadBody: async () => { throw new Error('throttled'); } });
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect(out.bodyMissing).toBe(true);
+    expect(byKey(out).important.applied).toBe(false);
+    const out2 = await classify({ ...base, message: noBody, ask: fakeAsk({ private: 0.1, important: 0.5, urgent: 0.1 }), loadBody: async () => ({ ...noBody }) });
+    expect(out2.bodyMissing).toBe(true); // fetched, but there was no text
+  });
+});
+
 describe('buildQuestion', () => {
   it('omits empty criteria sides', () => {
     expect(buildQuestion({ instructions: 'Q?', true_what: 'yes', true_examples: [], false_what: null, false_examples: [] }))

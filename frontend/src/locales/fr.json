@@ -2361,6 +2361,7 @@
       "runNoBody": "Corps non envoyé",
       "runPrivate": "Privé : corps non envoyé",
       "runTokens": "{{n}} tokens",
+      "bodyMissing": "Certains tags étaient incertains, mais le corps du message n'a pas pu être récupéré pour un second examen.",
       "reclassify": "Reclasser"
     },
     "conn": {

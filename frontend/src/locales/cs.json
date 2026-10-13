@@ -2380,6 +2380,7 @@
       "runNoBody": "Text neodeslán",
       "runPrivate": "Soukromé: text neodeslán",
       "runTokens": "{{n}} tokenů",
+      "bodyMissing": "Některé štítky byly nejisté, ale text zprávy se nepodařilo získat pro druhé posouzení.",
       "reclassify": "Znovu zařadit"
     },
     "conn": {

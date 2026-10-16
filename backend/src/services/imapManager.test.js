@@ -701,9 +701,9 @@ describe('ensureMailbox — namespace + already-exists matrix', () => {
 // ── ensureMailbox — case-insensitive casing resolution ────────────────────────
 // On a case-insensitive server an existing "TODO" satisfies a "Todo" CREATE, but imapflow's
 // already-exists result echoes the REQUESTED casing. Persisting that (planGtdFolderPersist)
-// never case-matches the synced rows' folder value. With resolvePath set (only /folders/ensure,
-// which persists), the already-exists branches resolve the real casing from the folder LIST;
-// classify/snooze leave it off so they skip the extra round-trip.
+// never case-matches the synced rows' folder value. With resolvePath set (by the callers that
+// persist the path), the already-exists branches resolve the real casing from the folder LIST;
+// classify leaves it off so it skips the extra round-trip.
 describe('ensureMailbox — case-insensitive casing resolution', () => {
   it('ALREADYEXISTS return + resolvePath: resolves the server casing from LIST', async () => {
     const client = {
@@ -734,6 +734,15 @@ describe('ensureMailbox — case-insensitive casing resolution', () => {
     const res = await ensureMailbox(client, 'Todo');
     expect(res).toEqual({ path: 'Todo', created: false });
     expect(client.list).not.toHaveBeenCalled();
+  });
+
+  it('prefers an exact match to a case variant listed before it (case-sensitive server)', async () => {
+    const client = {
+      mailboxCreate: vi.fn().mockResolvedValue({ path: 'INBOX.Snoozed', created: false }),
+      list: vi.fn().mockResolvedValue([{ path: 'INBOX' }, { path: 'INBOX.snoozed' }, { path: 'INBOX.Snoozed' }]),
+    };
+    const res = await ensureMailbox(client, 'Snoozed', { resolvePath: true });
+    expect(res).toEqual({ path: 'INBOX.Snoozed', created: false });
   });
 
   it('falls back to the known path when the LIST has no case-insensitive match', async () => {
@@ -1892,6 +1901,34 @@ describe('inline images the body never shows are listed as attachments', () => {
     expect(body.attachments.map(a => a.filename)).toEqual(['logo.png', 'spacer.png']);
   });
 
+  // #595: whether a cid: reference left in the HTML could resolve on another fetch.
+  const related = (...images) => ({
+    type: 'multipart/related',
+    childNodes: [
+      { part: '1', type: 'text/html', encoding: '7bit', parameters: { charset: 'utf-8' } },
+      ...images.map(([part, id]) => ({ part, type: 'image/png', encoding: 'base64', id, size: 12, disposition: 'inline', dispositionParameters: { filename: `${part}.png` } })),
+    ],
+  });
+
+  it('is complete when a reference names a Content-ID no part has: it can never resolve', async () => {
+    const { mgr, account } = serve(related(['2', '<logo@x>']), { '1': '<img src="cid:logo@x"><img src="cid:missing@x">', '2': 'iVBORw0KGgo=' });
+    const body = await mgr.fetchMessageBody(account, 42, 'INBOX');
+    expect(body.html).toBe('<img src="data:image/png;base64,iVBORw0KGgo="><img src="cid:missing@x">');
+    expect(body.cidsComplete).toBe(true);
+  });
+
+  it('is not complete when an image the HTML references did not arrive: another fetch may get it', async () => {
+    const { mgr, account } = serve(related(['2', '<logo@x>']), { '1': '<img src="cid:logo@x">' });
+    const body = await mgr.fetchMessageBody(account, 42, 'INBOX');
+    expect(body.html).toBe('<img src="cid:logo@x">');
+    expect(body.cidsComplete).toBe(false);
+  });
+
+  it('is complete when every referenced image was embedded', async () => {
+    const { mgr, account } = serve(related(['2', '<logo@x>']), { '1': '<img src="cid:logo@x">', '2': 'iVBORw0KGgo=' });
+    expect((await mgr.fetchMessageBody(account, 42, 'INBOX')).cidsComplete).toBe(true);
+  });
+
   it('lists an inline photo when the body is read from a synced message', () => {
     const body = extractBodyFromMsg({
       bodyStructure: textWithInlinePhoto,
@@ -2019,6 +2056,31 @@ describe("connectAccount attaches 'error' before connect (#360)", () => {
     expect(ImapFlow).toHaveBeenCalledTimes(1);
     expect(errorListenersAtConnect).toBeGreaterThanOrEqual(1);
     expect(emitThrew).toBe(false);
+  });
+});
+
+// A host the address check refuses (or an OAuth refresh that fails) used to throw before the
+// try that releases the in-progress lock: the account stayed "connecting" until a restart.
+describe('connectAccount when the host is refused', () => {
+  it('releases the lock and records the error, so the next attempt runs', async () => {
+    resolveForConnection.mockReset().mockRejectedValue(new Error('Host cannot be a private or reserved IP address'));
+    getConnectionPolicy.mockResolvedValue({ allowPrivateHosts: false, allowInsecureTls: false });
+    query.mockReset().mockResolvedValue({ rows: [] });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const mgr = new ImapManager(null);
+    clearInterval(mgr._healthCheckTimer);
+    clearInterval(mgr._snippetSchedulerTimer);
+    mgr.disconnectAccount = vi.fn(() => Promise.resolve());
+    mgr.broadcast = vi.fn();
+    const acct = { id: 'acct-refused', user_id: 'u1', imap_host: '2130706433', imap_port: 993, imap_tls: true, auth_user: 'u', auth_pass: 'enc' };
+
+    expect(await mgr.connectAccount(acct)).toBe(false);
+    expect(mgr.connectingAccounts.has(acct.id)).toBe(false);
+    expect(query.mock.calls.some(([sql, params]) => /SET sync_error/.test(sql) && /private or reserved/.test(params[0]))).toBe(true);
+    // Not "Already connecting": the second attempt reaches the host check again.
+    expect(await mgr.connectAccount(acct)).toBe(false);
+    expect(resolveForConnection).toHaveBeenCalledTimes(2);
   });
 });
 

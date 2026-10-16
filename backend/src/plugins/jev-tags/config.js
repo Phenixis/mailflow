@@ -1,0 +1,83 @@
+// The plugin's per-user configuration, kept in the generic plugin storage (plugin_data): the Jev
+// settings (API key encrypted) and, per tag key, the yes/no question Jev answers for that tag.
+import { storage, encryptSecret, decryptSecret, listTagDefinitions, ensureTagDefinition } from '../api.js';
+import { PLUGIN_ID, DEFAULT_SETTINGS, DEFAULT_TAGS } from './defaults.js';
+
+const settingsKey = (userId) => `settings:${userId}`;
+const questionsKey = (userId) => `questions:${userId}`;
+
+async function readValue(key) {
+  return (await storage.getValue(PLUGIN_ID, key))?.value ?? {};
+}
+
+// Settings with the API key decrypted for server-side use only; routes expose just `hasApiKey`.
+export async function loadSettings(userId) {
+  const stored = await readValue(settingsKey(userId));
+  const fromUi = stored.apiKeyEnc ? decryptSecret(stored.apiKeyEnc) : null;
+  const apiKey = fromUi || process.env.TYPESAFE_API_KEY || null;
+  const rest = { ...stored };
+  delete rest.apiKeyEnc;
+  return { ...DEFAULT_SETTINGS, ...rest, apiKey, apiKeySource: fromUi ? 'ui' : (process.env.TYPESAFE_API_KEY ? 'env' : null) };
+}
+
+// `patch.apiKey`: a string sets it, '' or null clears it, undefined leaves it alone.
+export async function saveSettings(userId, patch) {
+  const stored = await readValue(settingsKey(userId));
+  const next = { ...stored };
+  for (const field of ['threshold_low', 'threshold_high', 'private_above', 'max_body_chars', 'model', 'privacyTagKey']) {
+    if (patch[field] !== undefined) next[field] = patch[field];
+  }
+  if (patch.apiKey !== undefined) {
+    if (patch.apiKey?.trim()) next.apiKeyEnc = encryptSecret(patch.apiKey.trim()); // a pasted key often carries a newline or space
+    else delete next.apiKeyEnc;
+  }
+  await storage.put(PLUGIN_ID, settingsKey(userId), { value: next, ownerId: userId });
+}
+
+export const loadQuestions = (userId) => readValue(questionsKey(userId));
+
+export async function saveQuestion(userId, tagKey, question) {
+  const all = await loadQuestions(userId);
+  await storage.put(PLUGIN_ID, questionsKey(userId), { value: { ...all, [tagKey]: question }, ownerId: userId });
+}
+
+export async function removeQuestion(userId, tagKey) {
+  const rest = { ...(await loadQuestions(userId)) };
+  delete rest[tagKey];
+  await storage.put(PLUGIN_ID, questionsKey(userId), { value: rest, ownerId: userId });
+}
+
+// A question the user never wrote: no text, no examples. Switching Jev on from the row switch creates such a
+// record, and it makes Jev use the generic default question built from the tag's name.
+const isBlankQuestion = (q) => !q || (!q.instructions?.trim() && !q.true_what && !q.false_what
+  && !(q.true_examples || []).length && !(q.false_examples || []).length);
+
+// Create Private / Important / Urgent as tags (when missing) and give each its default question: when it has
+// none, or only a blank one (keeping its on/off and learning choices). Never overwrites a question the user
+// wrote or edited.
+export async function ensureDefaults(userId) {
+  const all = await loadQuestions(userId);
+  for (const t of DEFAULT_TAGS) {
+    await ensureTagDefinition(userId, { key: t.key, name: t.name, color: t.color });
+    if (isBlankQuestion(all[t.key])) {
+      all[t.key] = { ...t.question, enabled: all[t.key]?.enabled ?? true, ...(all[t.key]?.learn === undefined ? {} : { learn: all[t.key].learn }) };
+    }
+  }
+  await storage.put(PLUGIN_ID, questionsKey(userId), { value: all, ownerId: userId });
+}
+
+// The question for a tag nobody wrote one for: a plain statement built from the tag's name. Jev
+// reads it together with the examples (hand-written and learned from the user's own tagging).
+export const defaultInstructions = (name) => `The message belongs under the tag "${name}".`;
+
+// The tags to ask Jev about: the user's tags (enabled) that Jev is switched on for. A tag with no
+// written instructions gets the default question built from its name.
+export async function activeEntries(userId) {
+  const [defs, questions] = await Promise.all([listTagDefinitions(userId), loadQuestions(userId)]);
+  return defs
+    .filter((d) => d.enabled && questions[d.key] && questions[d.key].enabled !== false)
+    .map((d) => {
+      const q = questions[d.key];
+      return { key: d.key, name: d.name, question: { ...q, instructions: q.instructions?.trim() ? q.instructions : defaultInstructions(d.name) } };
+    });
+}

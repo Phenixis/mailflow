@@ -634,6 +634,10 @@
         "label": "Apri selettore cartelle",
         "description": "Copia il messaggio selezionato in una cartella"
       },
+      "openTagPicker": {
+        "label": "Assegna tag al messaggio",
+        "description": "Aggiungi o rimuovi tag dal messaggio selezionato"
+      },
       "replyAllFromSelection": {
         "label": "Rispondi a tutti dalla selezione",
         "description": "Rispondi a tutti i destinatari del messaggio selezionato"
@@ -1930,5 +1934,106 @@
     "trash": "Cestino",
     "spam": "Spam",
     "archive": "Archivio"
+  },
+  "tags": {
+    "title": "Tag",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "impostato a mano",
+      "auto": "aggiunto da {{source}}"
+    },
+    "header": {
+      "hide": "Nascondi i tag",
+      "none": "Nessun tag definito. Creane alcuni nelle impostazioni."
+    },
+    "filter": {
+      "all": "Tutta la posta",
+      "label": "Filtro per tag",
+      "modeAny": "almeno uno",
+      "modeAll": "tutti",
+      "modeHint": "Mostra la posta con almeno uno dei tag scelti, oppure solo quella che li ha tutti"
+    },
+    "picker": {
+      "count": "{{n}} su {{total}}"
+    },
+    "toast": {
+      "added": "Tag «{{name}}» aggiunto a {{n}} messaggio/i",
+      "removed": "Tag «{{name}}» rimosso da {{n}} messaggio/i",
+      "failed": "Impossibile aggiornare il tag: {{error}}"
+    },
+    "settings": {
+      "note": "I tag sono salvati solo in MailFlow; non viene scritto nulla sui tuoi server di posta.",
+      "name": "Nome",
+      "color": "Colore",
+      "key": "Chiave (lettere minuscole, cifre, _)",
+      "on": "attivo",
+      "confirmDelete": "Eliminare il tag «{{name}}» e rimuoverlo da tutti i messaggi?",
+      "add": "Aggiungi un tag",
+      "create": "Crea"
+    }
+  },
+  "jevTags": {
+    "why": {
+      "show": "Perché?",
+      "hide": "Nascondi",
+      "none": "Jev non ha ancora esaminato questo messaggio.",
+      "applied": "applicato",
+      "notApplied": "non applicato",
+      "subject": "solo oggetto",
+      "body": "oggetto + estratto del corpo",
+      "runFailed": "L'ultima esecuzione non è riuscita: {{error}}",
+      "runBody": "Estratto del corpo inviato",
+      "runNoBody": "Corpo non inviato",
+      "runPrivate": "Privato: corpo non inviato",
+      "runTokens": "{{n}} token",
+      "bodyMissing": "Alcuni tag erano incerti, ma non è stato possibile recuperare il corpo del messaggio per un secondo esame.",
+      "reclassify": "Riclassifica"
+    },
+    "conn": {
+      "title": "Connessione a Jev",
+      "keyLabel": "Chiave API TypeSafe",
+      "keySet": "impostata",
+      "keyEnv": "impostata, dall'ambiente del server",
+      "keyUnset": "non impostata",
+      "keyPlaceholderSet": "Inserisci una nuova chiave per sostituirla",
+      "keyFormatHint": "Una chiave TypeSafe di solito inizia con «apikey_». Incolla l'intera chiave, non solo una parte.",
+      "saved": "Chiave API salvata",
+      "removed": "Chiave API rimossa",
+      "low": "Zona di incertezza: sotto = no",
+      "high": "Zona di incertezza: sopra = sì",
+      "private": "Privato sopra (zero trust)",
+      "body": "Estratto del corpo (caratteri)",
+      "gate": "Tag di riservatezza (il corpo della posta con questo tag non viene mai inviato)",
+      "privacyNote": "Vengono inviati solo il mittente, l'oggetto e la data di oggi. L'estratto del corpo viene inviato solo per i tag ancora incerti e mai per un messaggio ritenuto privato.",
+      "saveSettings": "Salva impostazioni",
+      "settingsSaved": "Impostazioni salvate"
+    },
+    "acc": {
+      "title": "Account da taggare",
+      "note": "Nulla viene inviato a Jev per un account finché non lo attivi qui.",
+      "backfill": "Classifica i 100 messaggi più recenti non ancora classificati della posta in arrivo",
+      "reclassify": "Riclassifica i 100 messaggi più recenti della posta in arrivo (inclusi quelli già taggati; i tag impostati a mano vengono mantenuti)",
+      "queued": "{{n}} messaggio/i in coda ({{a}} account attivato/i)"
+    },
+    "q": {
+      "title": "Cosa decide Jev",
+      "note": "Attiva Jev per qualsiasi tag. Senza una tua domanda, chiede «il messaggio rientra in questo tag?» e impara dalla posta che tagghi a mano. Le modifiche valgono per la posta classificata da ora in poi.",
+      "defaults": "Crea i tag Privato, Importante e Urgente con le domande predefinite",
+      "created": "Tag predefiniti creati",
+      "off": "Jev non assegna questo tag",
+      "toggle": "Jev",
+      "learn": "Impara anche dalla posta che ho taggato a mano (i loro oggetti vengono inviati come esempi)",
+      "learnNote": "Come esempi si usano solo oggetti e nomi dei mittenti, mai il contenuto dei messaggi. Si può usare anche la posta taggata come privata: il suo oggetto e mittente vengono comunque inviati per classificarla.",
+      "question": "La domanda sì/no a cui risponde Jev (facoltativa: lasciala vuota per usare quella predefinita mostrata)",
+      "yesMeans": "Sì significa…",
+      "yesExamples": "Esempi di sì (uno per riga)",
+      "noMeans": "No significa…",
+      "noExamples": "Esempi di no (uno per riga)",
+      "save": "Salva domanda",
+      "saved": "Domanda salvata",
+      "remove": "Smetti di usare Jev per questo tag"
+    }
   }
 }

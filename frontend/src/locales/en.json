@@ -634,6 +634,10 @@
         "label": "Open label picker",
         "description": "Copy the selected message to a folder"
       },
+      "openTagPicker": {
+        "label": "Tag message",
+        "description": "Add or remove tags on the selected message"
+      },
       "replyAllFromSelection": {
         "label": "Reply all from selection",
         "description": "Reply all to the selected message"
@@ -1930,5 +1934,106 @@
     "trash": "Trash",
     "spam": "Spam",
     "archive": "Archive"
+  },
+  "tags": {
+    "title": "Tags",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "set by hand",
+      "auto": "added by {{source}}"
+    },
+    "header": {
+      "hide": "Hide tags",
+      "none": "No tags defined yet. Create some in Settings."
+    },
+    "filter": {
+      "all": "All mail",
+      "label": "Tag filter",
+      "modeAny": "any of them",
+      "modeAll": "all of them",
+      "modeHint": "Show mail with any of the selected tags, or only mail with all of them"
+    },
+    "picker": {
+      "count": "{{n}} of {{total}}"
+    },
+    "toast": {
+      "added": "Tag \"{{name}}\" added to {{n}} message(s)",
+      "removed": "Tag \"{{name}}\" removed from {{n}} message(s)",
+      "failed": "Could not update the tag: {{error}}"
+    },
+    "settings": {
+      "note": "Tags are stored in MailFlow only; nothing is written to your mail servers.",
+      "name": "Name",
+      "color": "Color",
+      "key": "Key (lowercase letters, digits, _)",
+      "on": "on",
+      "confirmDelete": "Delete the tag \"{{name}}\" and remove it from every message?",
+      "add": "Add a tag",
+      "create": "Create"
+    }
+  },
+  "jevTags": {
+    "why": {
+      "show": "Why?",
+      "hide": "Hide",
+      "none": "Jev has not looked at this message yet.",
+      "applied": "applied",
+      "notApplied": "not applied",
+      "subject": "subject only",
+      "body": "subject + body excerpt",
+      "runFailed": "Last run failed: {{error}}",
+      "runBody": "Body excerpt sent",
+      "runNoBody": "Body not sent",
+      "runPrivate": "Private: body not sent",
+      "runTokens": "{{n}} tokens",
+      "bodyMissing": "Some tags were unsure, but the message body could not be retrieved for a second look.",
+      "reclassify": "Reclassify"
+    },
+    "conn": {
+      "title": "Jev connection",
+      "keyLabel": "TypeSafe API key",
+      "keySet": "set",
+      "keyEnv": "set, from the server environment",
+      "keyUnset": "not set",
+      "keyPlaceholderSet": "Enter a new key to replace it",
+      "keyFormatHint": "A TypeSafe key usually starts with \"apikey_\". Paste the whole key, not just a part of it.",
+      "saved": "API key saved",
+      "removed": "API key removed",
+      "low": "Unsure band: below this = no",
+      "high": "Unsure band: above this = yes",
+      "private": "Private above (zero trust)",
+      "body": "Body excerpt (characters)",
+      "gate": "Privacy tag (mail with it never has its body sent)",
+      "privacyNote": "Only sender, subject and today's date are sent. The body excerpt is sent only for tags still unsure after that, and never for a message scored private.",
+      "saveSettings": "Save settings",
+      "settingsSaved": "Settings saved"
+    },
+    "acc": {
+      "title": "Accounts to tag",
+      "note": "Nothing is sent to Jev for an account until you enable it here.",
+      "backfill": "Classify the 100 newest unclassified inbox messages",
+      "reclassify": "Reclassify the 100 newest inbox messages (including already tagged; tags set by hand are kept)",
+      "queued": "{{n}} message(s) queued ({{a}} account(s) enabled)"
+    },
+    "q": {
+      "title": "What Jev decides",
+      "note": "Switch Jev on for any tag. With no question of your own it asks \"does the message belong under this tag?\" and learns from the mail you tag by hand. Changes apply to mail classified from now on.",
+      "defaults": "Create the Private, Important and Urgent tags with default questions",
+      "created": "Default tags created",
+      "off": "Jev does not assign this tag",
+      "toggle": "Jev",
+      "learn": "Also learn from the mail I tagged by hand (their subjects are sent as examples)",
+      "learnNote": "Only subjects and sender names are used as examples, never message bodies. Mail tagged private can be used too: its subject and sender are already sent to classify it.",
+      "question": "The yes/no question Jev answers (optional: leave empty to use the default shown)",
+      "yesMeans": "Yes means...",
+      "yesExamples": "Examples of yes (one per line)",
+      "noMeans": "No means...",
+      "noExamples": "Examples of no (one per line)",
+      "save": "Save question",
+      "saved": "Question saved",
+      "remove": "Stop using Jev for this tag"
+    }
   }
 }

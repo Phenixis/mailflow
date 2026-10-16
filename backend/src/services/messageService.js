@@ -15,7 +15,7 @@ const snoozedElsewhereSql = (accounts) =>
   + ' AND EXISTS (SELECT 1 FROM snoozed_messages own WHERE own.account_id = m.account_id'
   + ' AND own.message_id_header = m.message_id AND own.snoozed_folder = m.folder))';
 
-export async function listMessages({ userId, accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category }) {
+export async function listMessages({ userId, accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category, tag, tagMode }) {
   const accountsResult = await query(
     'SELECT id, include_in_unified_inbox FROM email_accounts WHERE user_id = $1 AND enabled = true',
     [userId]
@@ -63,6 +63,21 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
     whereConditions.push(`(m.category IS NULL OR m.category = 'primary')`);
   }
 
+  // Tags: keep only messages carrying the given tag(s) (comma-separated keys, up to 10) for this user:
+  // any one of them (default) or all of them (tagMode 'all'). The folder counts below cannot tell how
+  // many match, so a tag filter counts its own rows.
+  const tagKeys = typeof tag === 'string'
+    ? [...new Set(tag.split(',').filter(Boolean))].slice(0, 10)
+    : [];
+  const tagFiltered = tagKeys.length > 0 && tagKeys.every((k) => /^[a-z][a-z0-9_]{0,39}$/.test(k));
+  if (tagFiltered) {
+    const needed = tagMode === 'all' ? tagKeys.length : 1;
+    whereConditions.push(`(SELECT COUNT(DISTINCT d.key) FROM message_tags mt JOIN tag_definitions d ON d.id = mt.tag_id
+      WHERE mt.account_id = m.account_id AND mt.email_key = tag_email_key(m.message_id, m.id)
+        AND NOT mt.dismissed AND d.user_id = $${p++} AND d.key = ANY($${p++}::text[])) >= $${p++}`);
+    values.push(userId, tagKeys, needed);
+  }
+
   // #407: hide UID-only placeholder rows whose envelope has not been fetched yet. During a
   // rapid archive/reconcile overlap a UID can be listed before its envelope arrives, rendering
   // as an "Unknown / (no subject)" ghost row. A genuine message always carries at least a
@@ -78,7 +93,10 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
 
   let total = 0;
   try {
-    if (isSpecificAccount) {
+    if (tagFiltered) {
+      const r = await query(`SELECT COUNT(*)::int AS n FROM messages m WHERE ${where}`, [...values]);
+      total = r.rows[0]?.n ?? 0;
+    } else if (isSpecificAccount) {
       const r = await query(
         'SELECT total_count, unread_count FROM folders WHERE account_id = $1 AND path = $2',
         [accountId, folder]

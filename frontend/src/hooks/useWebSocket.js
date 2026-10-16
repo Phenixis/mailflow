@@ -7,6 +7,7 @@ import { playNotificationSound } from '../utils/notificationSounds.js';
 import { accountAffectsUnifiedInbox } from '../utils/unifiedInbox.js';
 import { dispatchPluginWsMessage, dispatchPluginReconnect } from '../plugins/events.js';
 import { recordDiagEvent } from '../utils/diagEvents.js';
+import { invalidateTags } from '../tags/tagStore.js';
 
 function _applyServerCounts(counts) {
   useStore.getState().setUnreadCounts(counts);
@@ -359,6 +360,11 @@ export function useWebSocket() {
         }
         break;
       }
+
+      case 'tags_updated':
+        // A tag was added or removed (by hand, in another tab, or by a plugin): refetch those rows' tags.
+        invalidateTags(Array.isArray(data.messageIds) ? data.messageIds : []);
+        break;
 
       default:
         // A message type core doesn't handle — hand it to any activated plugin that registered for

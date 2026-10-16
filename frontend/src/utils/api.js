@@ -1,3 +1,5 @@
+import { getTagFilter } from '../tags/filterState.js';
+
 const BASE = '/api';
 
 // Sent on every /api request so the backend CSRF guard accepts it. A cross-site
@@ -311,7 +313,8 @@ export const api = {
 
   // Mail
   getMessages: (params) => {
-    const qs = new URLSearchParams(params).toString();
+    const { keys, mode } = getTagFilter();
+    const qs = new URLSearchParams(keys.length ? { ...params, tag: keys.join(','), tagMode: mode } : params).toString();
     return request('GET', `/mail/messages?${qs}`);
   },
   getMessage: (id) => request('GET', `/mail/messages/${id}`),
@@ -519,6 +522,28 @@ export const api = {
   // INBOX copy from the shared Message-ID.
   gtdDone: (id, states) => request('POST', '/gtd/done', { id, states }),
   gtdEnsureFolders: (accountId, folders) => request('POST', '/gtd/folders/ensure', { accountId, folders }),
+
+  // Tags: definitions, and the tags on messages.
+  tagDefinitions: () => request('GET', '/tags/definitions'),
+  tagCreate: (body) => request('POST', '/tags/definitions', body),
+  tagUpdate: (id, patch) => request('PATCH', `/tags/definitions/${id}`, patch),
+  tagDelete: (id) => request('DELETE', `/tags/definitions/${id}`),
+  tagsForMessages: (ids) => request('GET', `/tags/messages?ids=${ids.join(',')}`),
+  tagSet: (messageId, tagId, applied) => request('PUT', `/tags/messages/${messageId}/tags/${tagId}`, { applied }),
+  tagBulk: (messageIds, tagId, applied) => request('POST', '/tags/messages/bulk', { messageIds, tagId, applied }),
+
+  // Jev tags (plugin): connection settings, one yes/no question per tag, account opt-in, explanations.
+  jevSettings: () => request('GET', '/jev-tags/settings'),
+  jevSaveSettings: (patch) => request('PUT', '/jev-tags/settings', patch),
+  jevQuestions: () => request('GET', '/jev-tags/questions'),
+  jevSaveQuestion: (key, question) => request('PUT', `/jev-tags/questions/${key}`, question),
+  jevDeleteQuestion: (key) => request('DELETE', `/jev-tags/questions/${key}`),
+  jevDefaults: () => request('POST', '/jev-tags/defaults'),
+  jevAccounts: () => request('GET', '/jev-tags/accounts'),
+  jevSetAccount: (id, enabled) => request('PUT', `/jev-tags/accounts/${id}`, { enabled }),
+  jevWhy: (messageId) => request('GET', `/jev-tags/messages/${messageId}`),
+  jevReclassify: (messageId) => request('POST', `/jev-tags/messages/${messageId}/classify`),
+  jevBackfill: (limit, force = false) => request('POST', '/jev-tags/backfill', { limit, force }),
 
   // GTD — Inbox-Zero pet. Import uploads your own pet (pet.json text + a base64 spritesheet)
   // and caches it server-side; meta returns the animation descriptor; the sheet URL is used

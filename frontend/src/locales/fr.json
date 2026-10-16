@@ -114,6 +114,7 @@
     "sendTooltip": "Envoyer (Ctrl+Entrée)",
     "sending": "Envoi…",
     "discard": "Supprimer",
+    "discardFailed": "Impossible de supprimer le brouillon. Réessayez.",
     "saveDraft": "Enregistrer le brouillon",
     "savingDraft": "Enregistrement…",
     "draftSaved": "Brouillon enregistré",
@@ -220,6 +221,9 @@
     "noContent": "Aucun contenu trouvé dans ce message.",
     "remoteImagesBlocked": "Les images distantes ont été bloquées.",
     "loadImages": "Charger les images",
+    "trackersBlocked_one": "{{count}} traceur bloqué",
+    "trackersBlocked_other": "{{count}} traceurs bloqués",
+    "trackersBlockedHint": "Les images qui signalent à l'expéditeur que vous avez ouvert cet e-mail n'ont pas été chargées.",
     "allowSender": "Toujours autoriser depuis {{email}}",
     "allowDomain": "Toujours autoriser depuis @{{domain}}",
     "downloading": "Téléchargement…",
@@ -240,6 +244,9 @@
     "delete": "Supprimer",
     "downloadEml": "Télécharger en .eml",
     "print": "Imprimer",
+    "showDark": "Afficher en couleurs sombres",
+    "showOriginal": "Afficher les couleurs d'origine",
+    "cannotShowDark": "Cet e-mail ne peut pas être affiché en sombre sans rendre le texte difficile à lire",
     "printConversation": "Imprimer la conversation",
     "preparingPrint": "Préparation de l'impression…",
     "more": "Plus",
@@ -312,6 +319,16 @@
       "passwordLabel": "Mot de passe du PDF",
       "passwordSubmit": "Ouvrir",
       "passwordIncorrect": "Mot de passe incorrect. Réessayez."
+    },
+    "unsnoozed": {
+      "title": "Plus en attente",
+      "failTitle": "Impossible d'annuler la mise en attente",
+      "failBody": "Le message reste en attente. Réessayez."
+    },
+    "snoozeChanged": {
+      "title": "En attente jusqu'à {{when}}",
+      "failTitle": "Impossible de modifier l'heure de retour",
+      "failBody": "L'heure précédente est conservée. Réessayez."
     }
   },
   "messageList": {
@@ -395,6 +412,7 @@
     "pullToSync": "Tirer pour synchroniser",
     "releaseToSync": "Relâcher pour synchroniser",
     "noSearchResults": "Aucun résultat trouvé",
+    "searching": "Recherche en cours…",
     "noSearchResultsDesc": "Aucun résultat pour {{query}}",
     "searchFailed": "Échec de la recherche",
     "clearSearch": "Effacer la recherche",
@@ -452,7 +470,10 @@
         "label": "Division verticale",
         "description": "Liste des messages au-dessus du volet de lecture"
       }
-    }
+    },
+    "snoozedUntil": "En attente jusqu'à {{when}}",
+    "snoozedEmpty": "Rien en attente",
+    "snoozedEmptyDesc": "Les messages mis en attente patientent ici jusqu'à leur retour."
   },
   "lockScreen": {
     "subtitle": "Saisissez votre PIN pour déverrouiller",
@@ -510,7 +531,8 @@
     "emptying": "Vidage de « {{name}} »…",
     "emptied": "Dossier vidé",
     "backToAccounts": "Retour aux comptes",
-    "updateAvailable": "Mise à jour disponible : v{{version}}"
+    "updateAvailable": "Mise à jour disponible : v{{version}}",
+    "snoozed": "En attente"
   },
   "contextMenu": {
     "find": "Rechercher",
@@ -532,7 +554,9 @@
       "threeHours": "Dans 3 heures",
       "tomorrowMorning": "Demain matin",
       "nextWeek": "La semaine prochaine",
-      "custom": "Personnalisé..."
+      "custom": "Personnalisé...",
+      "change": "Modifier l'heure de retour",
+      "unsnooze": "Ne plus mettre en attente"
     },
     "categorize": "Catégoriser comme…",
     "categoryAlwaysSender": "Toujours pour cet expéditeur",
@@ -779,6 +803,11 @@
     },
     "title": "Paramètres",
     "close": "Fermer",
+    "behavior": {
+      "reading": "Lecture",
+      "writing": "Rédaction",
+      "sync": "Synchronisation"
+    },
     "tabs": {
       "cleanup": "Nettoyage",
       "accounts": "Comptes",
@@ -798,10 +827,11 @@
       "aiActions": "Actions IA",
       "antispam": "Antispam",
       "categories": "Catégories",
-      "groupAccountMail": "Compte et courrier",
-      "groupDisplay": "Affichage",
-      "groupSecurityIntegrations": "Sécurité et intégrations",
+      "groupMail": "Courrier",
+      "groupPreferences": "Préférences",
+      "groupAiExtensions": "IA et extensions",
       "groupAdmin": "Administration",
+      "behavior": "Comportement",
       "plugins": "Extensions",
       "backup": "Sauvegarde"
     },
@@ -845,6 +875,8 @@
       "actionForward": "Transférer à",
       "actionForwardPlaceholder": "destinataire@example.com",
       "actionSetCategory": "Définir la catégorie",
+      "actionNotify": "Me notifier",
+      "actionNotifyHint": "Me prévenir même si la règle déplace ce message ou le marque comme lu.",
       "actionSetCategorySelect": "Choisir une catégorie…",
       "actionMovePlaceholder": "Nom du dossier",
       "stopProcessing": "Arrêter le traitement des règles suivantes si celle-ci correspond",
@@ -889,6 +921,10 @@
       "editTitle": "Modifier le compte",
       "addTitle": "Ajouter un compte",
       "color": "Couleur du compte",
+      "icon": "Icône",
+      "iconNone": "Aucune (point de couleur)",
+      "iconCustom": "Ou saisissez un emoji",
+      "iconHint": "Affichée à la place du point de couleur.",
       "displayName": "Nom affiché",
       "displayNamePh": "ex. Gmail professionnel",
       "email": "Adresse e-mail",
@@ -992,6 +1028,8 @@
     "appearance": {
       "title": "Apparence",
       "description": "Choisissez un thème de couleur pour l'interface",
+      "darkEmailBodies": "Corps des e-mails sombres",
+      "darkEmailBodiesDesc": "Avec un thème sombre, afficher aussi les e-mails HTML en couleurs sombres : avec la version sombre de l'expéditeur s'il en a une, sinon recolorés par MailFlow. Un e-mail reste tel qu'envoyé s'il le demande ou si l'afficher en sombre rendrait le texte difficile à lire. Chaque message peut être basculé individuellement.",
       "typography": "Typographie",
       "typographyDescription": "Choisissez une combinaison de polices pour l'interface",
       "typographyLoading": "Chargement des polices…",
@@ -1065,6 +1103,14 @@
       "defaultSender": "Expéditeur par défaut",
       "defaultSenderDesc": "Adresse utilisée pour les nouveaux messages, quel que soit le compte affiché. Les réponses et les transferts utilisent toujours le compte qui a reçu le message.",
       "defaultSenderLastUsed": "Dernier compte utilisé",
+      "afterRemove": "Après suppression ou archivage",
+      "afterRemoveNext": "Ouvrir le message suivant",
+      "afterRemoveNextDesc": "Ouvrir le message situé sous celui retiré.",
+      "afterRemovePrevious": "Ouvrir le message précédent",
+      "afterRemovePreviousDesc": "Ouvrir le message situé au-dessus de celui retiré.",
+      "afterRemoveList": "Retour à la liste",
+      "afterRemoveListDesc": "Laisser le volet de lecture vide.",
+      "afterRemoveMobile": "Sur un téléphone, vous revenez toujours à la liste.",
       "markReadBehavior": "Marquer comme lu",
       "markReadImmediate": "Immédiatement",
       "markReadImmediateDesc": "Marquer les e-mails comme lus dès que vous les ouvrez.",

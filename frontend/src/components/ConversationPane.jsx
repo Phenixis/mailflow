@@ -10,9 +10,13 @@ import {
   newestConversationMessage,
 } from '../utils/conversation.js';
 import { archiveThread, deleteThread, spamThread, moveThread, snoozeThread } from '../utils/threadActions.js';
+import { advanceSelectionAfterRemoval, adjacentRow, openAdjacentRow } from '../utils/listSelection.js';
+import { useSwipeBack } from '../hooks/useSwipeBack.js';
+import SwipePager from './SwipePager.jsx';
 import { buildPrintDocument, openPrintWindow, printInWindow } from '../utils/printMessage.js';
 import ConversationMessageCard from './ConversationMessageCard.jsx';
 import ContextMenu from './ContextMenu.jsx';
+import { prefetchBody } from '../utils/bodyCache.js';
 
 function ThreadBtn({ onClick, title, children }) {
   return (
@@ -92,15 +96,29 @@ export default function ConversationPane({ threadId, folder, unified = false, se
     card?.scrollIntoView?.({ block: 'nearest' });
   }, [selectedMessageId, messages]);
 
+  // Swiping on a phone (#229), as in the single-message pane: from the left edge back to the list,
+  // and left and right for the next and previous row of the list, which may be a conversation or a
+  // single message (the SwipePager around the stack below).
+  const paneRef = useRef(null);
+  useSwipeBack({ enabled: isMobile, rootRef: paneRef, navKey: threadId, onBack: () => history.back() });
+  // Read so a new row in the list (or a search) refreshes the peeks either side.
+  useStore(s => s.messages);
+  useStore(s => s.searchResults);
+
   const toggle = (id) => setExpanded(prev => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
     return next;
   });
 
-  // Acting on the conversation empties the reading pane: every message it was showing
-  // has just been removed from the list behind it.
   const runAction = (action) => {
+    // Every action here takes the conversation's row out of the list. Open what takes its place
+    // (the afterRemove setting) while the row is still there to look up; with no row on screen,
+    // fall back to clearing the pane.
+    const { messages: listed, searchResults, searchQuery } = useStore.getState();
+    const row = (searchQuery.trim() ? searchResults : listed).find(m => (m.thread_id || m.id) === threadId);
+    if (row) advanceSelectionAfterRemoval(row.id, true);
+    else setSelectedMessage(null);
     action(messages, {
       t,
       addNotification,
@@ -108,8 +126,13 @@ export default function ConversationPane({ threadId, folder, unified = false, se
       // The authoritative list, re-read when the action actually commits, so a reply
       // that arrived while this conversation was open is not left behind.
       fetchThread: () => api.getThread(threadId, folder, unified),
+      // Archive, delete and move keep drafts and the rest apart, by the selected message (keepDraftsApart).
+      anchorId: selectedMessageId,
+      // Archive moves only the copies in the folder being viewed, as the list's archive does: the
+      // unified inbox is every account's INBOX, an account view is that account's folder.
+      folder: unified ? 'INBOX' : folder,
+      accountId: unified ? null : (messages.find(message => message.id === selectedMessageId)?.account_id ?? null),
     });
-    setSelectedMessage(null);
   };
 
   // A flag change on one card: the pane's copy of the thread and the list's copy both change.
@@ -150,7 +173,7 @@ export default function ConversationPane({ threadId, folder, unified = false, se
   const mobileBackBar = isMobile && (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
-      paddingTop: 'calc(var(--sat) + 10px)', paddingBottom: 10, paddingLeft: 14, paddingRight: 14,
+      paddingTop: 'calc(var(--sat) + 10px)', paddingBottom: 'calc(10px - var(--sat-trim))', paddingLeft: 14, paddingRight: 14,
       borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', flexShrink: 0,
     }}>
       <button
@@ -177,14 +200,14 @@ export default function ConversationPane({ threadId, folder, unified = false, se
   );
 
   if (error) return (
-    <div style={fill}>
+    <div ref={paneRef} style={fill}>
       {mobileBackBar}
       <div style={{ padding: 16, color: 'var(--red, #e03131)' }}>{error}</div>
     </div>
   );
   if (loading && !messages.length) {
     return (
-      <div style={fill}>
+      <div ref={paneRef} style={fill}>
         {mobileBackBar}
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div className="skeleton-line" style={{ height: 13, width: '48%', borderRadius: 4 }} />
@@ -196,8 +219,17 @@ export default function ConversationPane({ threadId, folder, unified = false, se
   if (!messages.length) return null;
 
   return (
-    <div style={{ ...fill, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div ref={paneRef} style={{ ...fill, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {mobileBackBar}
+      <SwipePager
+        enabled={isMobile}
+        prev={isMobile ? adjacentRow('prev', threadId) : null}
+        next={isMobile ? adjacentRow('next', threadId) : null}
+        navKey={threadId}
+        onNavigate={(dir) => openAdjacentRow(dir, threadId)}
+        // Warms the server's copy of a neighbor's body ahead of the swipe.
+        onPrefetch={(row) => prefetchBody(row.id)}
+      >
       <div
         // Remounts the stack when the thread's membership changes, so expansion state from a
         // previous conversation can never be applied to this one's message ids.
@@ -273,6 +305,7 @@ export default function ConversationPane({ threadId, folder, unified = false, se
           />
         ))}
       </div>
+      </SwipePager>
     </div>
   );
 }

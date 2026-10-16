@@ -186,3 +186,33 @@ describe('PATCH /auth/preferences autoOpenReplyDrafts', () => {
     expect(query).not.toHaveBeenCalled();
   });
 });
+
+describe('PATCH /auth/preferences afterRemove (#572)', () => {
+  it.each(['next', 'previous', 'list'])('stores %s', async (value) => {
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    await patchPreferences({ session: { userId: 'user-1' }, body: { afterRemove: value } }, res);
+    expect(query.mock.calls[0][0]).toContain("jsonb_build_object('afterRemove', $46::text)");
+    expect(query.mock.calls[0][1][45]).toBe(value);
+  });
+
+  it.each(['open', '', 3, null])('ignores %p', async (value) => {
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    await patchPreferences({ session: { userId: 'user-1' }, body: { afterRemove: value } }, res);
+    expect(query.mock.calls[0][1][45]).toBeNull();
+  });
+});
+
+describe('PATCH /auth/preferences darkEmailBodies (#228)', () => {
+  for (const value of [true, false]) it(`persists explicit ${value}`, async () => {
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    await patchPreferences({ session: { userId: 'user-1' }, body: { darkEmailBodies: value } }, res);
+    expect(query.mock.calls[0][0]).toContain("jsonb_build_object('darkEmailBodies', $47::boolean)");
+    expect(query.mock.calls[0][1][46]).toBe(value);
+  });
+  it('rejects a nonboolean without a write', async () => {
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    await patchPreferences({ session: { userId: 'user-1' }, body: { darkEmailBodies: 'yes' } }, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+});

@@ -10,6 +10,7 @@ import { pluginRegistry } from '../plugins/registry.js';
 import { createPluginMailFacade } from '../plugins/mailEngineFacade.js';
 import { refreshMicrosoftToken, refreshGoogleToken } from '../routes/oauth.js';
 import { sanitizeEmail } from './emailSanitizer.js';
+import { settleCids } from '../utils/cidRefs.js';
 import { logger } from './logger.js';
 import { recordBroadcast, recordWarning, recordSyncSignal } from './diagnosticsRing.js';
 import { decrypt } from './encryption.js';
@@ -19,9 +20,12 @@ import { adjustFolderCounts, resolveSpamFolder } from '../utils/mailUtils.js';
 import { getAccountAddresses } from './mailAccess.js';
 import { resolveForConnection, createPinnedLookup } from './hostValidation.js';
 import { getConnectionPolicy } from './connectionPolicy.js';
-import { applyInboxRules, applyBlockList } from './inboxRules.js';
+import { applyInboxRules, applyBlockList, newMailAlerts } from './inboxRules.js';
 import { classifyAndTagMessage } from './spamPipeline.js';
 import { generateVCard } from '../utils/vcard.js';
+import { mimeToExtension } from '../utils/inlineImages.js';
+import { truncateFilename } from '../utils/contentDisposition.js';
+import { BLOCK, WARN } from './attachmentExtensions.js';
 import { randomUUID } from 'crypto';
 
 
@@ -532,14 +536,9 @@ const FLAG_PUSH_PER_CYCLE = 30;      // cap setFlag attempts per account per cyc
 // U+202A-U+202E: LRE, RLE, PDF, LRO, RLO
 // U+2066-U+2069: LRI, RLI, FSI, PDI
 // U+200F: RTL mark  U+061C: Arabic letter mark
-const BIDI_OVERRIDE_RE = new RegExp(
-  [...Array.from({ length: 5 }, (_, i) => String.fromCodePoint(0x202A + i)),
-   ...Array.from({ length: 4 }, (_, i) => String.fromCodePoint(0x2066 + i)),
-   String.fromCodePoint(0x200F),
-   String.fromCodePoint(0x061C),
-  ].join(''),
-  'g'
-);
+// A character class: joined without brackets, the pattern only matched all eleven characters in a
+// row, so no real filename was ever cleaned and the attachment list showed the spoofed name.
+const BIDI_OVERRIDE_RE = /[\u202A-\u202E\u2066-\u2069\u200F\u061C]/g;
 
 // The attachment list from the BODYSTRUCTURE sync fetches for every new message, without any body
 // part. It is the walk fetchMessageBody runs, so opening the message later stores the same list.
@@ -573,6 +572,7 @@ export function extractBodyFromMsg(msg) {
     if (part.type === 'text/html' && !html) html = decoded;
     else if (part.type === 'text/plain' && !text) text = decoded;
   }
+  listUnreferencedInlineImages(results, html);
   return { html, text, attachments: results.attachments };
 }
 
@@ -769,9 +769,96 @@ export function walkStructure(node, results) {
   }
 }
 
+// A cid: reference in HTML or CSS, with or without angle brackets: src="cid:abc123" and
+// src="cid:<abc123>". The Content-ID ends where the URL does: at whitespace, a quote, ')', an
+// angle bracket or the '&' of &quot;. So cid:logo-dark is not a reference to logo.
+const CID_REFERENCE_RE = /cid:<?([^\s"'<>)&]+)>?/gi;
+
+// An inline image is shown only where the HTML references its Content-ID, so one
+// the HTML never references, or any when there is no HTML body (a photo sent
+// inline with a plain-text message), is listed as an attachment instead.
+function listUnreferencedInlineImages(results, html) {
+  const referenced = new Set();
+  for (const [, cid] of (html || '').matchAll(CID_REFERENCE_RE)) referenced.add(cid.toLowerCase());
+  for (const img of results.inlineImages || []) {
+    if (referenced.has(img.cid.toLowerCase())) continue;
+    results.attachments.push({
+      part: img.part,
+      filename: img.filename || `image.${mimeToExtension(img.type.split('/')[1])}`,
+      type: img.type,
+      encoding: img.encoding,
+      size: img.size,
+      disposition: img.disposition,
+    });
+  }
+}
+
+function findPart(node, partNum) {
+  if (!node) return null;
+  if (node.part === partNum) return node;
+  for (const child of node.childNodes || []) {
+    const found = findPart(child, partNum);
+    if (found) return found;
+  }
+  return null;
+}
+
+// A forwarded message attached as a file ("Forward as attachment" in Gmail, Outlook or MailFlow) is
+// a message/rfc822 part, and imapflow gives it the embedded message's structure as children. Walking
+// into those children filed the forwarded message's parts as the outer message's own: the .eml never
+// appeared, its files looked attached directly, and its text could replace the real body. Only a
+// part marked as a file (an attachment disposition or a filename) counts: a bounce report embeds the
+// original without either, and showing its text inline is the useful rendering there.
+function isAttachedMessage(node, type) {
+  if (type !== 'message/rfc822' || !node.childNodes?.length) return false;
+  const disposition = (node.disposition || '').toLowerCase();
+  return disposition === 'attachment'
+    || Boolean(node.dispositionParameters?.filename || node.parameters?.name);
+}
+
+// Inner files are only listed by name and type, on the .eml itself, so the attachment list shows one
+// file while the antispam attachment rules still see a program hidden inside the forward (#457). The
+// list is capped to keep the stored row small; risky files go first, so padding a forward with
+// harmless files cannot push a program past the cap.
+const MAX_CONTAINED_ATTACHMENTS = 50;
+
+function isRiskyAttachmentName(filename) {
+  const name = String(filename || '');
+  const dot = name.lastIndexOf('.');
+  const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
+  return BLOCK.has(ext) || WARN.has(ext);
+}
+
+function pushAttachedMessage(node, results) {
+  const rawFilename = node.dispositionParameters?.filename || node.parameters?.name
+    || `${truncateFilename(node.envelope?.subject || 'message', 80)}.eml`;
+  // eslint-disable-next-line no-control-regex -- a folded subject can carry CR/LF and other controls
+  const filename = rawFilename.replace(BIDI_OVERRIDE_RE, '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim() || 'message.eml';
+  const inner = { textParts: [], attachments: [], inlineImages: [], calendarParts: [] };
+  for (const child of node.childNodes) walkStructure(child, inner);
+  const all = inner.attachments.flatMap(att => [{ filename: att.filename, type: att.type }, ...(att.contains || [])]);
+  const contains = [
+    ...all.filter(entry => isRiskyAttachmentName(entry.filename)),
+    ...all.filter(entry => !isRiskyAttachmentName(entry.filename)),
+  ].slice(0, MAX_CONTAINED_ATTACHMENTS);
+  results.attachments.push({
+    part: node.part || '1',
+    filename,
+    type: 'message/rfc822',
+    encoding: node.encoding || '7bit',
+    size: node.dispositionParameters?.size ? parseInt(node.dispositionParameters.size) : node.size || 0,
+    disposition: (node.disposition || '').toLowerCase(),
+    ...(contains.length ? { contains } : {}),
+  });
+}
+
 function walkNode(node, results) {
   if (!node) return;
   const type = (node.type || '').toLowerCase();
+  if (isAttachedMessage(node, type)) {
+    pushAttachedMessage(node, results);
+    return;
+  }
   if (node.childNodes && node.childNodes.length > 0) {
     for (const child of node.childNodes) walkNode(child, results);
     return;
@@ -820,7 +907,8 @@ function walkNode(node, results) {
       charset: node.parameters?.charset || 'utf-8',
     });
   } else if (type.startsWith('image/') && node.id && disposition !== 'attachment') {
-    // Inline image referenced via cid: in the HTML body
+    // Inline image referenced via cid: in the HTML body. One the HTML never
+    // references is listed as an attachment once the body is known.
     results.inlineImages = results.inlineImages || [];
     results.inlineImages.push({
       part: node.part || '1',
@@ -828,6 +916,9 @@ function walkNode(node, results) {
       encoding: node.encoding || 'base64',
       // Content-ID header value is wrapped in angle brackets — strip them
       cid: (node.id || '').replace(/^<|>$/g, ''),
+      filename,
+      size: node.dispositionParameters?.size ? parseInt(node.dispositionParameters.size) : node.size || 0,
+      disposition,
     });
   } else if (filename) {
     // Named non-text part without an explicit disposition — still an attachment.
@@ -1767,8 +1858,8 @@ async function withFreshLogin(account, fn) {
 // insertCopiedSibling) so the namespace / already-exists matrix is unit-testable with a
 // mock client and no live pool.
 // resolvePath (default off) makes the already-exists branches resolve the server's real
-// casing via a LIST. Only the /folders/ensure route sets it — it PERSISTS the returned path,
-// so wrong casing there is durable; classify/snooze discard the path and skip the extra LIST.
+// casing via a LIST. Callers that PERSIST the returned path set it (folder create/ensure,
+// snooze), since wrong casing there is durable; classify discards it and skips the LIST.
 export async function ensureMailbox(client, path, { resolvePath = false } = {}) {
   const requested = String(path);
   // A flat-namespace server (personal-namespace delimiter null/empty) cannot represent a
@@ -1808,14 +1899,18 @@ export async function ensureMailbox(client, path, { resolvePath = false } = {}) 
 // lookup against the folder LIST. On a case-insensitive server "TODO" can already exist when
 // "Todo" was requested; imapflow's already-exists result echoes the REQUESTED casing, which,
 // if persisted (planGtdFolderPersist), never case-matches the synced rows' folder value and
-// silently zeroes the state. Best-effort: any list failure (or a client without list) falls
-// back to the caller's known path — never throws.
+// silently zeroes the state. An exact match wins: a case-sensitive server can hold both
+// "Snoozed" and a user's own "snoozed", and the CREATE collided with the exact one.
+// Best-effort: any list failure (or a client without list) falls back to the caller's known
+// path — never throws.
 async function resolveServerFolderCasing(client, knownPath) {
   if (typeof client.list !== 'function') return knownPath;
   try {
     const wanted = knownPath.toLowerCase();
     const boxes = await client.list();
-    const match = (Array.isArray(boxes) ? boxes : []).find(b => (b?.path || '').toLowerCase() === wanted);
+    const list = Array.isArray(boxes) ? boxes : [];
+    const match = list.find(b => b?.path === knownPath)
+      || list.find(b => (b?.path || '').toLowerCase() === wanted);
     return match?.path || knownPath;
   } catch {
     return knownPath;
@@ -1941,6 +2036,8 @@ export async function noteDraftsChanged(mgr, account, folder) {
 export class ImapManager {
   constructor(wss) {
     this.wss = wss;
+    // Snoozes being woken right now, by the sweep or by hand, so neither moves one twice.
+    this._wakingSnoozes = new Set();
     this._statusSyncRunning = new Set();
     this._statusSyncBackoff = new Map();
     this._statusAccountTimers = new Map();
@@ -2014,6 +2111,7 @@ export class ImapManager {
     this._flagDebounceTimers   = new Map(); // accountId -> debounce timer for flag-change syncs
     this._expungeDebounceTimers = new Map(); // accountId -> debounce timer for expunge reconciles
     this._pendingFlagSync = new Set(); // accountId — flag sync was skipped because a full sync was running; drain after sync
+    this._pendingNewMail = new Set(); // accountId — new mail (EXISTS) arrived while a sync was running; sync again after it
     // accountId -> Map<`${messageId}:${flag}`, { messageId, flag, attempts }>: local read/star
     // changes whose IMAP push failed and must be retried until the server confirms them.
     this._pendingFlagPush = new Map();
@@ -2471,7 +2569,13 @@ export class ImapManager {
           account.user_id
         );
       }
-      if (this.syncingAccounts.has(account.id)) return;
+      if (this.syncingAccounts.has(account.id)) {
+        // The running sync may already have read the mailbox, so this message could miss it and
+        // wait for the next interval tick, a minute away. Two messages a moment apart, or new
+        // mail while a fresh account's first syncs run, did exactly that. Sync again once it ends.
+        this._pendingNewMail.add(account.id);
+        return;
+      }
       // Named for the IMAP response that fired it, NOT for IDLE. An untagged EXISTS arrives
       // during IDLE *or* as an unsolicited response to any polled command, so the old
       // "IMAP IDLE:" prefix asserted push was working on connections that were only polling —
@@ -2557,11 +2661,15 @@ export class ImapManager {
       }
     }
 
-    // Refresh OAuth token if needed before connecting
-    account = await ensureFreshToken(account);
-    const { resolved, policy } = await resolveAccountHost(account);
     let client;
     try {
+      // Inside the try: a token refresh that fails, or a host the address check refuses, must
+      // release the in-progress lock and be recorded like any other failed connect. Before it
+      // was, it left the account "connecting" until a restart: the health check skipped it,
+      // Sync now said "Already connecting", and the user saw no error.
+      // Refresh OAuth token if needed before connecting
+      account = await ensureFreshToken(account);
+      const { resolved, policy } = await resolveAccountHost(account);
       // Connect via the shared helper: it attaches the #360 handshake-error listener, races the
       // connect against a 30s timeout (client.connect() has none — a slow/unresponsive server like
       // purelymail on a cold start would otherwise hang forever, wedging retries while
@@ -2703,6 +2811,7 @@ export class ImapManager {
     // disconnect) so a re-added account writes through instead of trusting a stale cache entry.
     this._syncErrorState.delete(accountId);
     this._pendingFlagSync.delete(accountId);
+    this._pendingNewMail.delete(accountId);
     const flagTimer = this._flagDebounceTimers.get(accountId);
     if (flagTimer) { clearTimeout(flagTimer); this._flagDebounceTimers.delete(accountId); }
     const expungeTimer = this._expungeDebounceTimers.get(accountId);
@@ -3192,7 +3301,19 @@ export class ImapManager {
     } finally {
       this.syncingAccounts.delete(account.id);
       this.syncStartedAt.delete(account.id);
+      this._syncAgainIfMailArrived(account);
     }
+  }
+
+  // New mail that arrived while a sync was running (the `exists` listener queued it): sync once more.
+  _syncAgainIfMailArrived(account) {
+    if (!this._pendingNewMail.delete(account.id)) return;
+    console.log(`IMAP EXISTS: new mail for ${logAccount(account)} arrived during a sync, syncing again`);
+    setImmediate(() => {
+      this._syncTick(account).catch(err =>
+        console.warn(`IDLE-triggered sync error for ${logAccount(account)}:`, err.message)
+      );
+    });
   }
 
   // Bulk-apply is_read/is_starred from a fetched {uid, isRead, isStarred}[] onto existing rows
@@ -4328,6 +4449,8 @@ export class ImapManager {
           // Push and client-side sound/toast are skipped for these so mark_read rules
           // don't still alert the user about mail they chose to auto-silence.
           let mutedIds = new Set();
+          // Mail a "Notify me" rule filed out of the Inbox (#588), alerted for like inbox mail.
+          let notifyMessages = [];
           if (folder === 'INBOX') {
             // Snapshot the unread candidates before the block-list / rules run, so the ingest
             // re-eval below can exclude any they move out of INBOX. Only needed with an ingest plugin.
@@ -4341,6 +4464,7 @@ export class ImapManager {
               const rulesResult = await applyInboxRules(newMessages, account, this);
               newMessages = rulesResult.remaining;
               mutedIds = rulesResult.mutedIds;
+              notifyMessages = rulesResult.notifyMessages || [];
             } catch (err) {
               console.error('inboxRules error:', err.message);
             }
@@ -4365,10 +4489,10 @@ export class ImapManager {
               }
             }
           }
-          // alertMessages: remaining messages not silenced by a mark_read rule.
-          const alertMessages = newMessages.filter(m => !mutedIds.has(m.id));
-          const alertCount = alertMessages.length;
-          if (newMessages.length > 0) this.broadcast({
+          // alertMessages: remaining messages not silenced by a mark_read rule, and mail a "Notify
+          // me" rule filed elsewhere. A push for one of those opens it by id, in its new folder.
+          const { alertMessages, alertCount, send } = newMailAlerts({ remaining: newMessages, mutedIds, notifyMessages });
+          if (send) this.broadcast({
             type: 'new_messages', accountId: account.id,
             folder, messages: newMessages.slice(-5), count: newMessages.length,
             alertMessages: alertMessages.slice(-5), alertCount,
@@ -5357,6 +5481,7 @@ export class ImapManager {
     fromEmail,
     to = [],
     cc = [],
+    bcc = [],
     snippet = '',
     date = new Date(),
     inReplyTo = null,
@@ -5376,8 +5501,8 @@ export class ImapManager {
       INSERT INTO messages (
         account_id, uid, folder, message_id, subject,
         from_name, from_email, to_addresses, cc_addresses,
-        date, snippet, is_read, is_starred, has_attachments, flags, thread_id
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10,$11,true,false,false,'[]',$12)
+        date, snippet, is_read, is_starred, has_attachments, flags, thread_id, bcc_addresses
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10,$11,true,false,false,'[]',$12,$13::jsonb)
       ON CONFLICT (account_id, uid, folder) DO UPDATE SET
         message_id = COALESCE(EXCLUDED.message_id, messages.message_id),
         subject = CASE
@@ -5391,6 +5516,8 @@ export class ImapManager {
         cc_addresses = CASE
           WHEN EXCLUDED.cc_addresses::text IS NOT NULL AND EXCLUDED.cc_addresses::text <> '[]'
           THEN EXCLUDED.cc_addresses ELSE messages.cc_addresses END,
+        -- Sent mail's Bcc (#585). NULL when there was none, so an update without one keeps it.
+        bcc_addresses = COALESCE(EXCLUDED.bcc_addresses, messages.bcc_addresses),
         date = EXCLUDED.date,
         snippet = CASE WHEN EXCLUDED.snippet <> '' THEN EXCLUDED.snippet ELSE messages.snippet END,
         is_read = true,
@@ -5408,6 +5535,7 @@ export class ImapManager {
       sanitizeStr(fromName || ''), sanitizeStr(fromEmail || ''),
       JSON.stringify(to), JSON.stringify(cc),
       safeDate(date), sanitizeStr(snippet || ''), threadId,
+      Array.isArray(bcc) && bcc.length ? JSON.stringify(bcc) : null,
     ]);
   }
 
@@ -5744,7 +5872,7 @@ export class ImapManager {
         );
         if (existing.rows.length) continue;
 
-        const { html, text, attachments } = await this.fetchMessageBody(
+        const { html, text, attachments, cidsComplete } = await this.fetchMessageBody(
           account, msg.uid, msg.folder || 'INBOX'
         );
         const safeHtml = html ? sanitizeEmail(html) : null;
@@ -5755,7 +5883,8 @@ export class ImapManager {
              SET body_html = $1, body_text = $2, attachments = $3,
                  snippet = CASE WHEN $5 != '' THEN $5 ELSE snippet END
              WHERE id = $4`,
-            [sanitizeStr(safeHtml), sanitizeStr(text), JSON.stringify(attachments || []), msg.id, sanitizeStr(snip)]
+            // Settled when its cid: references can never resolve (utils/cidRefs.js, #595).
+            [sanitizeStr(settleCids(safeHtml, cidsComplete)), sanitizeStr(text), JSON.stringify(attachments || []), msg.id, sanitizeStr(snip)]
           );
         }
       } catch (err) {
@@ -5807,7 +5936,7 @@ export class ImapManager {
         );
         if (existing.rows.length) continue;
 
-        const { html, text, attachments } = await this.fetchMessageBody(account, msg.uid, msg.folder);
+        const { html, text, attachments, cidsComplete } = await this.fetchMessageBody(account, msg.uid, msg.folder);
         const safeHtml = html ? sanitizeEmail(html) : null;
         if (safeHtml || text) {
           const snip = snippetFromBody(text, safeHtml || html);
@@ -5816,7 +5945,8 @@ export class ImapManager {
              SET body_html = $1, body_text = $2, attachments = $3,
                  snippet = CASE WHEN $5 != '' THEN $5 ELSE snippet END
              WHERE id = $4`,
-            [sanitizeStr(safeHtml), sanitizeStr(text), JSON.stringify(attachments || []), msg.id, sanitizeStr(snip)]
+            // Settled when its cid: references can never resolve (utils/cidRefs.js, #595).
+            [sanitizeStr(settleCids(safeHtml, cidsComplete)), sanitizeStr(text), JSON.stringify(attachments || []), msg.id, sanitizeStr(snip)]
           );
         }
       } catch (err) {
@@ -5900,6 +6030,10 @@ export class ImapManager {
       let html = null;
       let text = null;
       let attachments;
+      // False when a cid: reference is left in the HTML because its image's bytes did not arrive,
+      // so a later view should fetch again; a reference no part answers, or one over the repeat
+      // budget, stays whatever happens and leaves this true (utils/cidRefs.js, #595).
+      let cidsComplete = true;
       // Always address by UID string with uid:true option — direct UID FETCH avoids
       // the two-step SEARCH+FETCH path that object-range syntax triggers, which can
       // silently return nothing on stale connections or when a server-side search
@@ -6046,16 +6180,20 @@ export class ImapManager {
           }
         }
 
+        // Before Step 3, which replaces the cid: references this looks for.
+        listUnreferencedInlineImages(results, html);
+
         // Step 3: replace cid: references in HTML with data: URIs so inline
         // images render inside the sandboxed srcdoc iframe
         if (html && inlineImages.length > 0) {
           const dataUris = new Map();
+          const missingImages = new Set();
           for (const img of inlineImages) {
             if (!img.cid) continue;
             const key = img.cid.toLowerCase();
             if (dataUris.has(key)) continue;
             const buf = prefetched.get(img.part);
-            if (!buf || looksLikeTextPayload(buf)) continue;
+            if (!buf || looksLikeTextPayload(buf)) { missingImages.add(key); continue; }
             const enc = (img.encoding || '').toLowerCase();
             const b64 = enc === 'base64'
               ? buf.toString('ascii').replace(/\s/g, '')
@@ -6066,13 +6204,10 @@ export class ImapManager {
             const embedded = new Set();
             let repeatBudget = INLINE_IMAGE_REPEAT_BUDGET;
             let overBudget = 0;
-            // cid: refs appear with and without angle brackets — match both.
-            // e.g.  src="cid:abc123"  and  src="cid:<abc123>"
-            // The Content-ID ends where the URL does in HTML or CSS: at whitespace, a quote,
-            // ')', an angle bracket or the '&' of &quot;. Content-IDs, types and base64 text
-            // all come from the sender, so none of them become regex or replacement-string
-            // syntax, and a single pass never rescans an image it has inserted.
-            html = html.replace(/cid:<?([^\s"'<>)&]+)>?/gi, (ref, cid) => {
+            // Content-IDs, types and base64 text all come from the sender, so none of them
+            // become regex or replacement-string syntax, and a single pass never rescans an
+            // image it has inserted.
+            html = html.replace(CID_REFERENCE_RE, (ref, cid) => {
               const key = cid.toLowerCase();
               const dataUri = dataUris.get(key);
               if (!dataUri) return ref;
@@ -6087,6 +6222,11 @@ export class ImapManager {
               console.warn(`fetchMessageBody: uid=${uid} folder=${folder} account=${logAccount(account)}: left ${overBudget} repeated inline image reference(s) as cid:, past the ${INLINE_IMAGE_REPEAT_BUDGET / (1024 * 1024)} MB repeat budget`);
             }
           }
+          if (missingImages.size > 0) {
+            for (const [, cid] of html.matchAll(CID_REFERENCE_RE)) {
+              if (missingImages.has(cid.toLowerCase())) { cidsComplete = false; break; }
+            }
+          }
         }
       } finally {
         lock.release();
@@ -6094,7 +6234,7 @@ export class ImapManager {
 
       // Some malformed emails include NUL bytes that PostgreSQL rejects in text
       // columns. Strip them once here so all callers are safe.
-      return { html: sanitizeStr(html), text: sanitizeStr(text), attachments };
+      return { html: sanitizeStr(html), text: sanitizeStr(text), attachments, cidsComplete };
     });
 
     // Providers flagged preferFreshBodyFetch (e.g. PurelyMail) skip the shared pool on the
@@ -6220,8 +6360,9 @@ export class ImapManager {
           if (msg.bodyStructure) {
             const r = { textParts: [], attachments: [] };
             walkStructure(msg.bodyStructure, r);
-            const att = r.attachments.find(a => a.part === partNum);
-            if (att) encoding = att.encoding;
+            // Inline images the body never shows are listed at body time, not by this walk.
+            const att = r.attachments.find(a => a.part === partNum) || findPart(msg.bodyStructure, partNum);
+            if (att?.encoding) encoding = att.encoding;
           }
           const buf = msg.bodyParts?.get(partNum);
           if (buf) {
@@ -6770,6 +6911,13 @@ export class ImapManager {
           try { return await client.search({ uid: `${destUidNextBefore}:*` }, { uid: true }); }
           finally { lock.release(); }
         });
+        // A non-array result (undefined: no mailbox selected, false: SEARCH failed) leaves the
+        // destination unverified. Read as empty, it would report the whole batch stale.
+        if (!Array.isArray(destNew)) throw new Error(`destination UID SEARCH returned ${destNew}`);
+        // The filter guards the RFC 3501 `n:*` quirk, same as the staleness probe: when nothing
+        // arrived, the server still returns the destination's newest existing message, and a
+        // stale UID in the batch would be counted as having landed there and mapped onto it.
+        destNew = destNew.filter(u => u >= destUidNextBefore);
         destArrived = destNew.length;
       } catch (destErr) {
         console.warn(`bulkMoveMessages: destination verification failed (${destErr.message}) — trusting source-absence`);
@@ -6910,6 +7058,7 @@ export class ImapManager {
       } finally {
         this.syncingAccounts.delete(account.id);
         this.syncStartedAt.delete(account.id);
+        this._syncAgainIfMailArrived(account);
       }
     }));
 
@@ -6959,10 +7108,14 @@ export class ImapManager {
     }, 60_000);
   }
 
-  async _runSnoozeWakeup() {
-    // Find snoozed messages whose snooze_until has passed and which are still in
-    // the snoozed folder (joined via stable Message-ID header).
-    const due = await query(`
+  isWakingSnooze(snoozeId) {
+    return this._wakingSnoozes.has(snoozeId);
+  }
+
+  // The snoozed messages that are live (still in the folder they were snoozed into), with what a
+  // wake-up needs; `where` narrows them, aliasing the record sm (#269 wakes some by hand).
+  async snoozedRows(where, params) {
+    const result = await query(`
       SELECT sm.id AS snooze_id, sm.user_id, sm.account_id,
              sm.message_id_header, sm.original_folder, sm.snoozed_folder, m.uid, m.is_read
       FROM snoozed_messages sm
@@ -6970,87 +7123,122 @@ export class ImapManager {
                      AND m.message_id = sm.message_id_header
                      AND m.folder = sm.snoozed_folder
                      AND m.is_deleted = false
-      WHERE sm.snooze_until <= NOW()
-    `);
+      WHERE ${where}
+    `, params);
+    return result.rows;
+  }
 
-    for (const row of due.rows) {
+  // Brings one snoozed message back to where it was snoozed from. On its own wake-up it comes back
+  // unread, so the reader notices it; brought back by hand (#269) it keeps its read state.
+  // `onlyIfDue` (the sweep) leaves a snooze that is no longer due. Returns whether it came back,
+  // false when there was nothing left to wake; a wake of it already under way returns null.
+  async wakeSnoozed(row, { markUnread = true, onlyIfDue = false } = {}) {
+    const snoozeId = row.snooze_id;
+    if (this._wakingSnoozes.has(snoozeId)) return null;
+    this._wakingSnoozes.add(snoozeId);
+    try {
+      // `row` can be out of date: the sweep reads every due snooze first and wakes them one by
+      // one, and the reader may unsnooze one by hand, or give it a later time, in between. Read
+      // it again now that this wake holds it. Gone, no longer due, or its message no longer in
+      // the Snoozed folder: nothing to do, where waking it again would move a UID that is not
+      // there and count the message back into its folder twice. Otherwise go on with the
+      // message's UID and read state as they are now.
+      const [live] = await this.snoozedRows(
+        `sm.id = $1${onlyIfDue ? ' AND sm.snooze_until <= NOW()' : ''}`, [snoozeId]);
+      if (!live) return false;
+      row = live;
+
+      const accountResult = await query('SELECT * FROM email_accounts WHERE id = $1', [row.account_id]);
+      if (!accountResult.rows.length) return false;
+      const account = accountResult.rows[0];
+
+      // Guard source UID before the IMAP move so reconcileDeletes cannot delete
+      // the DB row if an EXPUNGE arrives from the Snoozed folder while the move
+      // is in flight.
+      this._guardMoveUid(row.account_id, row.snoozed_folder, row.uid);
+      let newUid;
       try {
-        const accountResult = await query('SELECT * FROM email_accounts WHERE id = $1', [row.account_id]);
-        if (!accountResult.rows.length) continue;
-        const account = accountResult.rows[0];
+        // Move back to original folder
+        newUid = await this.moveMessageGetNewUid(
+          account, row.uid, row.snoozed_folder, row.original_folder
+        );
 
-        // Guard source UID before the IMAP move so reconcileDeletes cannot delete
-        // the DB row if an EXPUNGE arrives from the Snoozed folder while the move
-        // is in flight.
-        this._guardMoveUid(row.account_id, row.snoozed_folder, row.uid);
-        let newUid;
-        try {
-          // Move back to original folder
-          newUid = await this.moveMessageGetNewUid(
-            account, row.uid, row.snoozed_folder, row.original_folder
-          );
-
-          // Mark as unread so the user notices it
-          if (newUid) {
-            await this.setFlag(account, newUid, row.original_folder, '\\Seen', false);
-          } else if (row.message_id_header) {
-            // No UIDPLUS — server moved the message but returned no UID map.
-            // Search the destination folder by Message-ID to locate and unflag \Seen.
-            try {
-              await withFreshClient(account, async (client) => {
-                const lock = await client.getMailboxLock(row.original_folder);
-                try {
-                  const uids = await client.search({ header: ['Message-ID', row.message_id_header] }, { uid: true });
-                  if (uids.length > 0) {
-                    const r = await client.messageFlagsRemove(String(uids[0]), ['\\Seen'], { uid: true });
-                    if (r === false) console.warn(`Snooze wakeup: messageFlagsRemove returned false for ${row.original_folder}`);
-                  } else {
-                    console.warn(`Snooze wakeup: could not find message in ${row.original_folder} to mark unread (Message-ID: ${row.message_id_header})`);
-                  }
-                } finally {
-                  lock.release();
+        // Mark as unread so the user notices it (not when the reader asked for it back).
+        if (markUnread && newUid) {
+          await this.setFlag(account, newUid, row.original_folder, '\\Seen', false);
+        } else if (markUnread && row.message_id_header) {
+          // No UIDPLUS — server moved the message but returned no UID map.
+          // Search the destination folder by Message-ID to locate and unflag \Seen.
+          try {
+            await withFreshClient(account, async (client) => {
+              const lock = await client.getMailboxLock(row.original_folder);
+              try {
+                const uids = await client.search({ header: ['Message-ID', row.message_id_header] }, { uid: true });
+                if (uids.length > 0) {
+                  const r = await client.messageFlagsRemove(String(uids[0]), ['\\Seen'], { uid: true });
+                  if (r === false) console.warn(`Snooze wakeup: messageFlagsRemove returned false for ${row.original_folder}`);
+                } else {
+                  console.warn(`Snooze wakeup: could not find message in ${row.original_folder} to mark unread (Message-ID: ${row.message_id_header})`);
                 }
-              });
-            } catch (err) {
-              console.warn(`Snooze wakeup: could not mark message unread on server (no UIDPLUS): ${err.message}`);
-            }
+              } finally {
+                lock.release();
+              }
+            });
+          } catch (err) {
+            console.warn(`Snooze wakeup: could not mark message unread on server (no UIDPLUS): ${err.message}`);
           }
-
-          // Update DB: change folder, mark unread, and update UID if the move returned one.
-          if (newUid != null) {
-            await query(
-              'UPDATE messages SET folder = $1, is_read = false, read_changed_at = NOW(), uid = $4 WHERE account_id = $2 AND message_id = $3 AND folder = $5',
-              [row.original_folder, row.account_id, row.message_id_header, newUid, row.snoozed_folder]
-            );
-          } else {
-            // Non-UIDPLUS: DB holds the stale source UID at the destination. Guard it so
-            // reconcileDeletes does not treat it as an orphan before the next sync corrects it.
-            this._guardMoveUid(row.account_id, row.original_folder, row.uid);
-            await query(
-              'UPDATE messages SET folder = $1, is_read = false, read_changed_at = NOW() WHERE account_id = $2 AND message_id = $3 AND folder = $4',
-              [row.original_folder, row.account_id, row.message_id_header, row.snoozed_folder]
-            );
-            setTimeout(() => this._unguardMoveUid(row.account_id, row.original_folder, row.uid), 10_000);
-          }
-        } finally {
-          this._unguardMoveUid(row.account_id, row.snoozed_folder, row.uid);
         }
 
-        // Remove snooze record
-        await query('DELETE FROM snoozed_messages WHERE id = $1', [row.snooze_id]);
-
-        // Update folder counts: message leaves Snoozed and re-enters original_folder as unread.
-        // row.is_read reflects the read state in the Snoozed folder before the move.
-        adjustFolderCounts(row.account_id, row.snoozed_folder, -1, row.is_read ? 0 : -1);
-        adjustFolderCounts(row.account_id, row.original_folder, 1, 1); // always +1 unread on wakeup
-
-        // Notify the user's open clients so the message reappears
-        this.broadcast({ type: 'snooze_wakeup', accountId: row.account_id }, row.user_id);
-
-        console.log(`Snooze wakeup: message ${row.message_id_header} restored to ${row.original_folder}`);
-      } catch (err) {
-        console.error(`Snooze wakeup failed for snooze_id ${row.snooze_id}:`, err.message);
+        // Update DB: change folder (and mark unread, on its own wake-up), and update UID if the move returned one.
+        if (newUid != null) {
+          await query(
+            `UPDATE messages SET folder = $1, uid = $4${markUnread ? ', is_read = false, read_changed_at = NOW()' : ''} WHERE account_id = $2 AND message_id = $3 AND folder = $5`,
+            [row.original_folder, row.account_id, row.message_id_header, newUid, row.snoozed_folder]
+          );
+        } else {
+          // Non-UIDPLUS: DB holds the stale source UID at the destination. Guard it so
+          // reconcileDeletes does not treat it as an orphan before the next sync corrects it.
+          this._guardMoveUid(row.account_id, row.original_folder, row.uid);
+          await query(
+            `UPDATE messages SET folder = $1${markUnread ? ', is_read = false, read_changed_at = NOW()' : ''} WHERE account_id = $2 AND message_id = $3 AND folder = $4`,
+            [row.original_folder, row.account_id, row.message_id_header, row.snoozed_folder]
+          );
+          setTimeout(() => this._unguardMoveUid(row.account_id, row.original_folder, row.uid), 10_000);
+        }
+      } finally {
+        this._unguardMoveUid(row.account_id, row.snoozed_folder, row.uid);
       }
+
+      // Remove snooze record
+      await query('DELETE FROM snoozed_messages WHERE id = $1', [row.snooze_id]);
+
+      // Update folder counts: message leaves Snoozed and re-enters original_folder (unread on its own wake-up).
+      // row.is_read reflects the read state in the Snoozed folder before the move.
+      adjustFolderCounts(row.account_id, row.snoozed_folder, -1, row.is_read ? 0 : -1);
+      adjustFolderCounts(row.account_id, row.original_folder, 1, markUnread || !row.is_read ? 1 : 0);
+
+      // Notify the user's open clients so the message reappears
+      this.broadcast({ type: 'snooze_wakeup', accountId: row.account_id }, row.user_id);
+
+      console.log(`Snooze wakeup: message ${row.message_id_header} restored to ${row.original_folder}`);
+      return true;
+    } catch (err) {
+      console.error(`Snooze wakeup failed for snooze_id ${row.snooze_id}:`, err.message);
+      return false;
+    } finally {
+      this._wakingSnoozes.delete(snoozeId);
+    }
+  }
+
+  async _runSnoozeWakeup() {
+    // Find snoozed messages whose snooze_until has passed and which are still in
+    // the snoozed folder (joined via stable Message-ID header).
+    const due = { rows: await this.snoozedRows('sm.snooze_until <= NOW()', []) };
+
+    for (const row of due.rows) {
+      // One the reader is bringing back by hand right now is left to that.
+      if (this._wakingSnoozes.has(row.snooze_id)) continue;
+      await this.wakeSnoozed(row, { onlyIfDue: true });
     }
 
     // Clean up orphaned snooze records whose message has left the snoozed folder

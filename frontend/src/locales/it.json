@@ -114,6 +114,7 @@
     "sendTooltip": "Invia (Ctrl+Invio)",
     "sending": "Invio…",
     "discard": "Scarta",
+    "discardFailed": "Impossibile eliminare la bozza. Riprova.",
     "saveDraft": "Salva bozza",
     "savingDraft": "Salvataggio…",
     "draftSaved": "Bozza salvata",
@@ -220,6 +221,9 @@
     "noContent": "Nessun contenuto trovato nel messaggio.",
     "remoteImagesBlocked": "Le immagini remote sono state bloccate.",
     "loadImages": "Carica immagini",
+    "trackersBlocked_one": "{{count}} tracker bloccato",
+    "trackersBlocked_other": "{{count}} tracker bloccati",
+    "trackersBlockedHint": "Le immagini che segnalano al mittente l'apertura di questa email non sono state caricate.",
     "allowSender": "Consenti sempre da {{email}}",
     "allowDomain": "Consenti sempre da @{{domain}}",
     "downloading": "Download in corso…",
@@ -240,6 +244,9 @@
     "delete": "Elimina",
     "downloadEml": "Scarica come .eml",
     "print": "Stampa",
+    "showDark": "Mostra in colori scuri",
+    "showOriginal": "Mostra i colori originali",
+    "cannotShowDark": "Questa email non può essere mostrata scura senza rendere il testo difficile da leggere",
     "printConversation": "Stampa conversazione",
     "preparingPrint": "Preparazione della stampa…",
     "more": "Altro",
@@ -312,6 +319,16 @@
       "passwordLabel": "Password del PDF",
       "passwordSubmit": "Apri",
       "passwordIncorrect": "Password errata. Riprova."
+    },
+    "unsnoozed": {
+      "title": "Posticipo annullato",
+      "failTitle": "Impossibile annullare il posticipo",
+      "failBody": "Resta posticipato. Riprova."
+    },
+    "snoozeChanged": {
+      "title": "Posticipato fino a {{when}}",
+      "failTitle": "Impossibile cambiare l'orario",
+      "failBody": "Resta l'orario precedente. Riprova."
     }
   },
   "messageList": {
@@ -395,6 +412,7 @@
     "pullToSync": "Trascina per sincronizzare",
     "releaseToSync": "Rilascia per sincronizzare",
     "noSearchResults": "Nessun risultato trovato",
+    "searching": "Ricerca in corso…",
     "noSearchResultsDesc": "Nessun risultato per {{query}}",
     "searchFailed": "Ricerca non riuscita",
     "clearSearch": "Cancella ricerca",
@@ -452,7 +470,10 @@
         "label": "Divisione verticale",
         "description": "Elenco messaggi sopra il riquadro di lettura"
       }
-    }
+    },
+    "snoozedUntil": "Posticipato fino a {{when}}",
+    "snoozedEmpty": "Niente posticipato",
+    "snoozedEmptyDesc": "Le email posticipate aspettano qui finché non tornano."
   },
   "lockScreen": {
     "subtitle": "Inserisci il PIN per sbloccare",
@@ -510,7 +531,8 @@
     "emptying": "Svuotamento di \"{{name}}\"…",
     "emptied": "Cartella svuotata",
     "backToAccounts": "Torna agli account",
-    "updateAvailable": "Aggiornamento disponibile: v{{version}}"
+    "updateAvailable": "Aggiornamento disponibile: v{{version}}",
+    "snoozed": "Posticipati"
   },
   "contextMenu": {
     "find": "Trova",
@@ -532,7 +554,9 @@
       "threeHours": "Tra 3 ore",
       "tomorrowMorning": "Domani mattina",
       "nextWeek": "La settimana prossima",
-      "custom": "Personalizzato..."
+      "custom": "Personalizzato...",
+      "change": "Cambia l'orario",
+      "unsnooze": "Annulla posticipo"
     },
     "categorize": "Categorizza come…",
     "categoryAlwaysSender": "Sempre per questo mittente",
@@ -779,6 +803,11 @@
     },
     "title": "Impostazioni",
     "close": "Chiudi",
+    "behavior": {
+      "reading": "Lettura",
+      "writing": "Scrittura",
+      "sync": "Sincronizzazione"
+    },
     "tabs": {
       "cleanup": "Pulizia",
       "accounts": "Account",
@@ -798,10 +827,11 @@
       "aiActions": "Azioni IA",
       "antispam": "Antispam",
       "categories": "Categorie",
-      "groupAccountMail": "Account e posta",
-      "groupDisplay": "Schermo",
-      "groupSecurityIntegrations": "Sicurezza e integrazioni",
+      "groupMail": "Posta",
+      "groupPreferences": "Preferenze",
+      "groupAiExtensions": "IA ed estensioni",
       "groupAdmin": "Amministrazione",
+      "behavior": "Comportamento",
       "plugins": "Plugin",
       "backup": "Backup"
     },
@@ -845,6 +875,8 @@
       "actionForward": "Inoltra a",
       "actionForwardPlaceholder": "destinatario@example.com",
       "actionSetCategory": "Imposta categoria",
+      "actionNotify": "Avvisami",
+      "actionNotifyHint": "Avvisami anche se la regola sposta l'email o la segna come letta.",
       "actionSetCategorySelect": "Seleziona una categoria…",
       "actionMovePlaceholder": "Nome cartella",
       "stopProcessing": "Interrompi l'elaborazione delle regole successive se questa corrisponde",
@@ -889,6 +921,10 @@
       "editTitle": "Modifica account",
       "addTitle": "Aggiungi account",
       "color": "Colore account",
+      "icon": "Icona",
+      "iconNone": "Nessuna (punto colorato)",
+      "iconCustom": "Oppure digita un'emoji",
+      "iconHint": "Mostrata al posto del punto colorato.",
       "displayName": "Nome visualizzato",
       "displayNamePh": "es. Gmail Lavoro",
       "email": "Indirizzo email",
@@ -992,6 +1028,8 @@
     "appearance": {
       "title": "Aspetto",
       "description": "Scegli un tema colore per l'interfaccia",
+      "darkEmailBodies": "Corpo delle email scuro",
+      "darkEmailBodiesDesc": "Con un tema scuro, mostra in colori scuri anche le email HTML: con il design scuro del mittente se c'è, altrimenti ricolorate da MailFlow. Un'email resta come inviata quando lo chiede o quando mostrarla scura renderebbe il testo difficile da leggere. Ogni messaggio può essere cambiato singolarmente.",
       "typography": "Tipografia",
       "typographyDescription": "Scegli una combinazione di font per l'interfaccia",
       "typographyLoading": "Caricamento font…",
@@ -1065,6 +1103,14 @@
       "defaultSender": "Mittente predefinito",
       "defaultSenderDesc": "Da quale indirizzo vengono inviati i nuovi messaggi, qualunque sia l'account che stai visualizzando. Le risposte e gli inoltri usano sempre l'account che ha ricevuto il messaggio.",
       "defaultSenderLastUsed": "Ultimo account usato",
+      "afterRemove": "Dopo l'eliminazione o l'archiviazione",
+      "afterRemoveNext": "Apri il messaggio successivo",
+      "afterRemoveNextDesc": "Apre il messaggio sotto quello rimosso.",
+      "afterRemovePrevious": "Apri il messaggio precedente",
+      "afterRemovePreviousDesc": "Apre il messaggio sopra quello rimosso.",
+      "afterRemoveList": "Torna all'elenco",
+      "afterRemoveListDesc": "Lascia vuoto il riquadro di lettura.",
+      "afterRemoveMobile": "Sul telefono si torna sempre all'elenco.",
       "markReadBehavior": "Segna come letto",
       "markReadImmediate": "Immediatamente",
       "markReadImmediateDesc": "Segna le email come lette non appena le apri.",

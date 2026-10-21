@@ -9,8 +9,8 @@ import { query } from '../db.js';
 import * as store from './store.js';
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), '../../../migrations');
-const migration0067 = readFileSync(join(migrationsDir, '0067_tags.sql'), 'utf8');
-const migration0068 = readFileSync(join(migrationsDir, '0068_tags_by_email.sql'), 'utf8');
+const migration0069 = readFileSync(join(migrationsDir, '0069_tags.sql'), 'utf8');
+const migration0070 = readFileSync(join(migrationsDir, '0070_tags_by_email.sql'), 'utf8');
 const U1 = '00000000-0000-4000-8000-000000000001';
 const U2 = '00000000-0000-4000-8000-000000000002';
 const A1 = '00000000-0000-4000-8000-0000000000a1';
@@ -18,7 +18,7 @@ const A2 = '00000000-0000-4000-8000-0000000000a2';
 const M1 = '00000000-0000-4000-8000-0000000000b1';
 const M2 = '00000000-0000-4000-8000-0000000000b2';
 
-// Runs the real 0067 migration and the store's SQL in a throwaway schema of an explicitly supplied database.
+// Runs the real 0069 migration and the store's SQL in a throwaway schema of an explicitly supplied database.
 describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store (PostgreSQL)', () => {
   let db;
   const schema = `tags_core_test_${process.pid}`;
@@ -37,8 +37,8 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store (PostgreSQL
       INSERT INTO messages (id, account_id, folder, uid, message_id, date) VALUES
         ('${M1}', '${A1}', 'INBOX', 1, '<m1@x.example>', now()),
         ('${M2}', '${A2}', 'INBOX', 1, '<m2@x.example>', now())`);
-    await db.query(migration0067);
-    await db.query(migration0068);
+    await db.query(migration0069);
+    await db.query(migration0070);
     query.mockImplementation((sql, params) => db.query(sql, params));
   });
   afterAll(async () => {
@@ -196,8 +196,8 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags follow the email 
         plugin_annotations jsonb NOT NULL DEFAULT '{}', UNIQUE (account_id, uid, folder));
       INSERT INTO users VALUES ('${U1}');
       INSERT INTO email_accounts VALUES ('${A1}', '${U1}');`);
-    await db.query(migration0067);
-    await db.query(migration0068);
+    await db.query(migration0069);
+    await db.query(migration0070);
     query.mockImplementation((sql, params) => db.query(sql, params));
     urgent = await store.createDefinition(U1, { key: 'urgent', name: 'Urgent' });
     important = await store.createDefinition(U1, { key: 'important', name: 'Important' });
@@ -283,8 +283,8 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags follow the email 
   });
 });
 
-// The upgrade of a database that already holds tags keyed by the row id (migration 0067 as first shipped).
-describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('migration 0068 converts existing tags (PostgreSQL)', () => {
+// The upgrade of a database that already holds tags keyed by the row id (migration 0069 as first shipped).
+describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('migration 0070 converts existing tags (PostgreSQL)', () => {
   it('re-keys tags by email, merges copies, drops tags of messages that no longer exist', async () => {
     const schemaName = `tags_migrate_test_${process.pid}`;
     const c = new pg.Client({ connectionString: process.env.MAILFLOW_TEST_DATABASE_URL });
@@ -301,21 +301,21 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('migration 0068 convert
           ('00000000-0000-4000-8000-0000000000f1', '${A1}', '<a@x.example>'),
           ('00000000-0000-4000-8000-0000000000f2', '${A1}', '<a@x.example>'),
           ('00000000-0000-4000-8000-0000000000f3', '${A1}', NULL)`);
-      await c.query(migration0067);
+      await c.query(migration0069);
       await c.query(`
         INSERT INTO tag_definitions (id, user_id, key, name) VALUES ('00000000-0000-4000-8000-0000000000d1', '${U1}', 'urgent', 'Urgent');
         INSERT INTO message_tags (message_id, tag_id, source) VALUES
           ('00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-0000000000d1', 'manual'),
           ('00000000-0000-4000-8000-0000000000f2', '00000000-0000-4000-8000-0000000000d1', 'manual'),
           ('00000000-0000-4000-8000-0000000000f3', '00000000-0000-4000-8000-0000000000d1', 'jev-tags')`);
-      await c.query(migration0068);
+      await c.query(migration0070);
       const { rows } = await c.query('SELECT email_key, source FROM message_tags ORDER BY email_key');
       expect(rows).toEqual([
         { email_key: '<a@x.example>', source: 'manual' }, // the two copies became one
         { email_key: 'row:00000000-0000-4000-8000-0000000000f3', source: 'jev-tags' }, // no Message-ID: row key
       ]);
       expect((await c.query("SELECT 1 FROM information_schema.columns WHERE table_name = 'message_tags' AND column_name = 'message_id'")).rowCount).toBe(0);
-      await c.query(migration0068); // running it again is harmless (a fresh install runs 0067 then 0068)
+      await c.query(migration0070); // running it again is harmless (a fresh install runs 0069 then 0070)
       expect((await c.query('SELECT count(*) FROM message_tags')).rows[0].count).toBe('2');
     } finally {
       await c.query(`DROP SCHEMA IF EXISTS ${schemaName} CASCADE`);

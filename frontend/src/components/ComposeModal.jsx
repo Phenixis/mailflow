@@ -20,6 +20,7 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { ComposerLink } from '../utils/editorLink.js';
+import { PasteWithoutPageColors } from '../utils/editorPaste.js';
 import { copyToClipboard } from '../utils/clipboard.js';
 import { resolveInitialFrom } from '../utils/defaultSender.js';
 import { initialComposeFocus, isComposeSendShortcut } from '../utils/composeFromMessage.js';
@@ -29,6 +30,8 @@ import { resolveSignatureEnabled } from '../utils/composeSignature.js';
 import { UNDO_SEND_SECONDS, undoWindowMs, trackHeldSend, reopenCompose } from '../utils/heldSend.js';
 import { openSentMessage } from '../utils/openSentMessage.js';
 import { frameGeometry } from '../utils/frameGeometry.js';
+import { AI_MESSAGE_MAX_CHARS } from '../aiActions.js';
+import { stripTags } from '../utils/stripTags.js';
 
 // Resize an image blob/file to max maxW pixels wide, preserving aspect ratio.
 // Returns a Promise<string> of a base64 data URL.
@@ -197,7 +200,7 @@ function resolveFrom(val) {
 }
 
 export default function ComposeModal() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { closeCompose, composeData, accounts, addNotification, plaintextEmail, setThreadMessages, setPrepareComposeSwitch, updateComposePersistedKey } = useStore();
   const composeSession = useRef(useStore.getState().composeSession).current;
   const composeOwner = useRef(useStore.getState().user?.id).current;
@@ -405,6 +408,7 @@ export default function ComposeModal() {
       FontFamily,
       BackgroundColor,
       FontSize,
+      PasteWithoutPageColors,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       ResizableImage.configure({ inline: true, allowBase64: true }),
       Table.configure({ resizable: false }),
@@ -796,7 +800,7 @@ export default function ComposeModal() {
     aiAbortRef.current = controller;
 
     const currentText = plaintextEmail ? body
-      : (htmlMode ? htmlSource.replace(/<[^>]+>/g, ' ') : (editor?.getText() ?? ''));
+      : (htmlMode ? stripTags(htmlSource) : (editor?.getText() ?? ''));
 
     const toStr = [...toChips, ...(toInput.trim() ? [toInput.trim()] : [])].join(', ');
     const PROMPTS = {
@@ -818,22 +822,35 @@ export default function ComposeModal() {
       },
     };
     const { system, user } = PROMPTS[action] || PROMPTS.draft;
+    // Improve, Shorten and Grammar replace the whole draft with their result (applyAiText), so
+    // a draft cut to fit the request lost everything past the cut on Apply. One too long is
+    // refused instead (#633).
+    if (user.length > AI_MESSAGE_MAX_CHARS) {
+      const fmt = new Intl.NumberFormat(i18n.language);
+      setAiPanel({ action, status: 'error', text: t('compose.toolbar.aiTooLong', { count: fmt.format(user.length), max: fmt.format(AI_MESSAGE_MAX_CHARS) }) });
+      return;
+    }
     const messages = [
       { role: 'system', content: system },
-      { role: 'user', content: user.slice(0, 16000) },
+      { role: 'user', content: user },
     ];
 
     setAiPanel({ action, status: 'generating', text: '' });
 
     try {
       const fullText = await api.ai.chat(messages, {
+        purpose: 'compose',
         signal: controller.signal,
         onDelta: (text) => setAiPanel(p => p ? { ...p, text } : p),
       });
       setAiPanel(p => p ? { ...p, status: 'done', text: fullText } : p);
     } catch (err) {
       if (err.name !== 'AbortError') {
-        setAiPanel(p => p ? { ...p, status: 'error', text: err.message } : p);
+        // Refused: AI is off for this user, or the writing assistant is off for everyone (#644).
+        const text = err.code === 'ai_user_disabled' ? t('compose.toolbar.aiNotAllowed')
+          : err.code === 'ai_feature_disabled' ? t('compose.toolbar.aiFeatureOff')
+            : err.message;
+        setAiPanel(p => p ? { ...p, status: 'error', text } : p);
       }
     }
   };
@@ -873,7 +890,7 @@ export default function ComposeModal() {
     if (!skipAttachWarn) {
       const composedText = plaintextEmail
         ? body
-        : (htmlMode ? htmlSource.replace(/<[^>]+>/g, ' ') : (editor?.getText() ?? ''));
+        : (htmlMode ? stripTags(htmlSource) : (editor?.getText() ?? ''));
       const keywords = t('compose.attachmentKeywords').split('|');
       const lower = composedText.toLowerCase();
       const hasAttachmentWord = keywords.some(kw => lower.includes(kw.toLowerCase()));

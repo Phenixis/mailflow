@@ -26,7 +26,7 @@ import { generateVCard } from '../utils/vcard.js';
 import { mimeToExtension } from '../utils/inlineImages.js';
 import { truncateFilename } from '../utils/contentDisposition.js';
 import { BLOCK, WARN } from './attachmentExtensions.js';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 
 
 // Shorthand for log lines — keeps domain visible while masking the local part.
@@ -572,8 +572,16 @@ export function extractBodyFromMsg(msg) {
     if (part.type === 'text/html' && !html) html = decoded;
     else if (part.type === 'text/plain' && !text) text = decoded;
   }
+  html = adoptReferencedImages(results, html);
   listUnreferencedInlineImages(results, html);
-  return { html, text, attachments: results.attachments };
+  // An image whose Content-Location only the server can tell (noteBodyImageCandidate) may be one
+  // the HTML shows, when the HTML has an image URL nothing here resolved: the body is left to
+  // fetchMessageBody, which reads the location, rather than cached with that image broken for good.
+  // Only sync and backfill with a provider's fetchBody on cache this body; no profile sets it now.
+  const deferred = Boolean(html)
+    && (results.imageCandidates || []).some(c => c.needsLocation && !c.adopted)
+    && hasUnresolvedImageUrl(html);
+  return { html, text, attachments: results.attachments, deferred };
 }
 
 // Decode a MIME body part from its raw Buffer.
@@ -747,7 +755,7 @@ export function bodyFallbackApplies(results) {
 }
 
 export function walkStructure(node, results) {
-  walkNode(node, results);
+  walkNode(node, results, false);
   // A text part that carries a filename is an attached file (an .html report, a
   // .txt log) when the message also has an unnamed text part serving as its
   // body. Senders often mark such files inline or omit the disposition, so the
@@ -774,12 +782,41 @@ export function walkStructure(node, results) {
 // angle bracket or the '&' of &quot;. So cid:logo-dark is not a reference to logo.
 const CID_REFERENCE_RE = /cid:<?([^\s"'<>)&]+)>?/gi;
 
+// A cid: URL is percent-encoded (RFC 2392: cid:foo4%25foo1@bar.net names the Content-ID
+// <foo4%foo1@bar.net>), and Content-IDs compare without regard to case. cidMatcher(has) returns
+// a function giving the key a reference names, as written or else decoded, for which has(key) is
+// true, or ''. Decoding is tried only when the reference as written matches nothing, once per
+// distinct reference, and only for percent-encoded ASCII: a Content-ID is ASCII (RFC 5322), and
+// decodeURIComponent cannot throw on it. A body of malformed or non-ASCII references otherwise
+// spent most of its time in decodeURIComponent's exceptions.
+const PERCENT_ENCODED_ASCII_RE = /^(?:[^%]|%[0-7][0-9A-Fa-f])*$/;
+
+function cidMatcher(has) {
+  const decoded = new Map();
+  return (cid) => {
+    const raw = cid.toLowerCase();
+    if (has(raw)) return raw;
+    if (!raw.includes('%')) return '';
+    let key = decoded.get(cid);
+    if (key === undefined) {
+      key = PERCENT_ENCODED_ASCII_RE.test(cid) ? decodeURIComponent(cid).toLowerCase() : '';
+      decoded.set(cid, key);
+    }
+    return key && has(key) ? key : '';
+  };
+}
+
 // An inline image is shown only where the HTML references its Content-ID, so one
 // the HTML never references, or any when there is no HTML body (a photo sent
 // inline with a plain-text message), is listed as an attachment instead.
 function listUnreferencedInlineImages(results, html) {
+  const cids = new Set((results.inlineImages || []).map(img => img.cid.toLowerCase()));
+  const match = cidMatcher(key => cids.has(key));
   const referenced = new Set();
-  for (const [, cid] of (html || '').matchAll(CID_REFERENCE_RE)) referenced.add(cid.toLowerCase());
+  for (const [, cid] of (html || '').matchAll(CID_REFERENCE_RE)) {
+    const key = match(cid);
+    if (key) referenced.add(key);
+  }
   for (const img of results.inlineImages || []) {
     if (referenced.has(img.cid.toLowerCase())) continue;
     results.attachments.push({
@@ -791,6 +828,263 @@ function listUnreferencedInlineImages(results, html) {
       disposition: img.disposition,
     });
   }
+}
+
+// Content-Locations and file names longer than this are never matched.
+const MAX_RELATED_NAME_LENGTH = 2048;
+// An image larger than this (its encoded size, as the server's BODYSTRUCTURE gives it, never the
+// sender's Content-Disposition size= parameter) stays an attachment even when the HTML references
+// it: embedding copies the whole image into the stored body, and the layout images this is for
+// (#640) are a few KB. A photo past it is a file to download.
+const MAX_ADOPTED_IMAGE_BYTES = 5 * 1024 * 1024;
+// A file name matches only on an image part named like an image, or not named with any extension:
+// an image/* part called "report.pdf" is a file, whatever the HTML says.
+const IMAGE_NAME_RE = /\.(?:png|gif|jpe?g|webp|bmp|avif|svg|ico|tiff?)$/i;
+// Elements whose content is raw text or never rendered: nothing inside them is markup that shows
+// an image (and a <style>'s url()s are scanned as CSS). <plaintext> runs to the end of the document.
+const RAW_TEXT_TAGS = ['script', 'style', 'textarea', 'title', 'xmp', 'noscript', 'noembed', 'noframes', 'iframe'];
+const RAW_TEXT_END_RES = new Map(RAW_TEXT_TAGS.map(tag => [tag, new RegExp(`</${tag}`, 'gi')]));
+// The tags whose image URLs survive sanitizeEmail: src on <img>, background on the table tags
+// (a data: background is kept there only), and style on any tag but the ones it drops. A
+// reference elsewhere (<body background>, <iframe src>) would adopt an image that then vanished.
+const BACKGROUND_TAGS = new Set(['table', 'tr', 'td', 'th']);
+const DROPPED_STYLE_TAGS = new Set(['html', 'head', 'body']);
+const CSS_URL_RE = /url\(/gi;
+
+const isHtmlSpace = (c) => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f';
+const isTagNameChar = (code) => (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+
+// Calls onValue(start, end, unquotedAttribute) for each url(...) value in CSS text html[a, b). The
+// text is sliced first, so a search never runs past it: with many style attributes and no url(,
+// a search from each one to the end of the document would be quadratic.
+function scanCssUrls(html, a, b, onValue) {
+  const css = html.slice(a, b);
+  const re = new RegExp(CSS_URL_RE.source, 'gi');
+  let match;
+  while ((match = re.exec(css)) !== null) {
+    let p = match.index + 4;
+    while (p < css.length && isHtmlSpace(css[p])) p++;
+    const quote = css[p] === '"' || css[p] === "'" ? css[p] : css.startsWith('&quot;', p) ? '&quot;' : '';
+    const start = p + quote.length;
+    let end;
+    if (quote) {
+      end = css.indexOf(quote, start);
+      if (end < 0) return;
+    } else {
+      end = start;
+      while (end < css.length && css[end] !== ')' && !isHtmlSpace(css[end])) end++;
+    }
+    onValue(a + start, a + end, false, false);
+    re.lastIndex = end;
+  }
+}
+
+// Calls onValue(start, end, unquotedAttribute, isImgSrc) for every image URL in the HTML's markup
+// that sanitizeEmail keeps: <img src>, background= on table tags, and url() in a style attribute or
+// a <style> element. Text, comments, declarations, processing instructions and raw-text elements
+// (RAW_TEXT_TAGS) are skipped, so "src=chart.png" written in a message, a name in a comment or a
+// <textarea>, is not a reference. One forward pass: every index only moves ahead.
+function scanImageUrls(html, onValue) {
+  const n = html.length;
+  let i = 0;
+  while (i < n) {
+    const lt = html.indexOf('<', i);
+    if (lt < 0) return;
+    if (html.startsWith('!--', lt + 1)) {
+      const end = html.indexOf('-->', lt + 4);
+      if (end < 0) return;
+      i = end + 3;
+      continue;
+    }
+    // <!DOCTYPE ...>, <![CDATA[ ...>, <?xml ...?>: the HTML parser ends each at the first '>'.
+    if (html[lt + 1] === '!' || html[lt + 1] === '?') {
+      const end = html.indexOf('>', lt + 2);
+      if (end < 0) return;
+      i = end + 1;
+      continue;
+    }
+    let p = lt + 1;
+    const closing = html[p] === '/';
+    if (closing) p++;
+    const nameStart = p;
+    while (p < n && isTagNameChar(html.charCodeAt(p))) p++;
+    if (p === nameStart) { i = lt + 1; continue; }
+    const tag = p - nameStart <= 9 ? html.slice(nameStart, p).toLowerCase() : '';
+    for (;;) {
+      while (p < n && (isHtmlSpace(html[p]) || html[p] === '/')) p++;
+      if (p >= n) return;
+      if (html[p] === '>') { p++; break; }
+      const attrStart = p;
+      while (p < n && !isHtmlSpace(html[p]) && html[p] !== '=' && html[p] !== '>' && html[p] !== '/') p++;
+      if (p === attrStart) { p++; continue; }
+      const attr = p - attrStart <= 10 ? html.slice(attrStart, p).toLowerCase() : '';
+      while (p < n && isHtmlSpace(html[p])) p++;
+      if (html[p] !== '=') continue;
+      p++;
+      while (p < n && isHtmlSpace(html[p])) p++;
+      let start, end;
+      const quoted = html[p] === '"' || html[p] === "'";
+      if (quoted) {
+        start = p + 1;
+        end = html.indexOf(html[p], start);
+        if (end < 0) return;
+        p = end + 1;
+      } else {
+        start = p;
+        while (p < n && !isHtmlSpace(html[p]) && html[p] !== '>') p++;
+        end = p;
+      }
+      if (closing) continue;
+      if (attr === 'src' && tag === 'img') onValue(start, end, !quoted, true);
+      else if (attr === 'background' && BACKGROUND_TAGS.has(tag)) onValue(start, end, !quoted, false);
+      else if (attr === 'style' && !DROPPED_STYLE_TAGS.has(tag)) scanCssUrls(html, start, end, onValue);
+    }
+    i = p;
+    if (closing) continue;
+    if (tag === 'plaintext') return;
+    const endRe = RAW_TEXT_END_RES.get(tag);
+    if (endRe) {
+      endRe.lastIndex = i;
+      const match = endRe.exec(html);
+      const end = match ? match.index : n;
+      if (tag === 'style') scanCssUrls(html, i, end, onValue);
+      i = end;
+    }
+  }
+}
+
+// The value of an image URL as the HTML means it: '&amp;' is '&' in an attribute.
+function imageUrlText(html, start, end) {
+  const value = html.slice(start, end).trim();
+  return value.includes('&amp;') ? value.replaceAll('&amp;', '&') : value;
+}
+
+// Where a cid: image URL starts in the HTML (past any spaces inside the quotes), for each one
+// onCid(cid, offset, isImgSrc) is called with the Content-ID it names (cid:x, cid:<x>).
+function scanCidImageUrls(html, onCid) {
+  scanImageUrls(html, (start, end, unquoted, isImgSrc) => {
+    while (start < end && isHtmlSpace(html[start])) start++;
+    if (end - start < 5 || html.slice(start, start + 4).toLowerCase() !== 'cid:') return;
+    const cid = html.slice(start + 4, end).trim().replace(/^<|>$/g, '');
+    if (cid) onCid(cid, start, isImgSrc);
+  });
+}
+
+// Whether the HTML has an image URL that is neither cid: nor data:, one a Content-Location could be.
+function hasUnresolvedImageUrl(html) {
+  let found = false;
+  scanImageUrls(html, (start, end) => {
+    if (found || end <= start) return;
+    const value = html.slice(start, Math.min(end, start + 5)).toLowerCase();
+    if (!value.startsWith('cid:') && !value.startsWith('data:')) found = true;
+  });
+  return found;
+}
+
+// The Content-Location of a part from its MIME header (BODY[part.MIME]), unfolded; '' when it has
+// none. Only the first 16 KB are read: a part header is a few lines.
+export function contentLocationFromMimeHeader(buf) {
+  if (!buf) return '';
+  const header = buf.subarray(0, 16384).toString('utf8').replace(/\r?\n[ \t]+/g, ' ');
+  for (const line of header.split(/\r?\n/)) {
+    if (line.slice(0, 17).toLowerCase() === 'content-location:') return line.slice(17).trim();
+  }
+  return '';
+}
+
+// Some senders mark the images their HTML shows as attachments, or reference them inside a
+// multipart/related by Content-Location or file name instead of cid: (#640). Each image the HTML
+// does reference (noteBodyImageCandidate) joins the inline images, and each reference by name
+// becomes a cid: reference, so the inline image embedding, its repeat budget and the cid cache
+// handling (#595) treat it like any other.
+//
+// Inside a multipart/related the image is part of the page (header, badges, social icons) and
+// leaves the attachment list. Outside one it is a file the sender also shows, a photo cited by
+// cid: in the text: it stays listed, to download, as Gmail shows it. An image the HTML never
+// references stays an attachment, and so does one past MAX_ADOPTED_IMAGE_BYTES, or one whose
+// Content-ID an inline image or an earlier candidate already has: the HTML's reference resolves
+// to that one, and adopting the second dropped a real attachment from the list.
+//
+// A part without a usable Content-ID gets one with a per-fetch nonce, so a sender writing
+// cid:part-2-...@mailflow.invalid cannot reach it. Returns the HTML.
+function adoptReferencedImages(results, html) {
+  results.inlineImages = results.inlineImages || [];
+  const candidates = (results.imageCandidates || []).filter(c => !(c.sizeKnown && c.serverSize > MAX_ADOPTED_IMAGE_BYTES));
+  if (!html || (!candidates.length && !results.inlineImages.some(img => img.relatedNames))) return html;
+
+  const nonce = randomBytes(6).toString('hex');
+  const synthetic = (part) => `part-${part}-${nonce}@mailflow.invalid`;
+  const usable = (cid) => Boolean(cid) && !/[\s"'<>)&]/.test(cid);
+  const taken = new Set(results.inlineImages.map(img => img.cid.toLowerCase()));
+  for (const candidate of candidates) {
+    const key = candidate.cid.toLowerCase();
+    candidate.ownCid = candidate.cid && !taken.has(key) ? candidate.cid : '';
+    if (candidate.ownCid) taken.add(key);
+  }
+
+  const byName = new Map();
+  const nameFor = (names, target) => {
+    for (const name of names) {
+      if (name && name.length <= MAX_RELATED_NAME_LENGTH && !byName.has(name)) byName.set(name, target);
+    }
+  };
+  for (const img of results.inlineImages) {
+    if (img.relatedNames && usable(img.cid)) nameFor(img.relatedNames, { cid: img.cid });
+  }
+  // A part whose size the server did not give is matched only by a cid: reference from inside its
+  // multipart/related, the way mailers build a page's images: one an unbounded file name or
+  // location could claim might be any size, and is left an attachment.
+  for (const candidate of candidates) {
+    if (!candidate.sizeKnown) continue;
+    nameFor(candidate.relatedNames, { cid: usable(candidate.ownCid) ? candidate.ownCid : synthetic(candidate.part), candidate });
+  }
+
+  const adopted = new Map();
+  if (byName.size) {
+    let out = '';
+    let last = 0;
+    scanImageUrls(html, (start, end, unquoted) => {
+      const target = byName.get(imageUrlText(html, start, end));
+      if (!target || start < last) return;
+      // Quoted, so the '>' closing the tag never reads as the end of a cid:<...> reference.
+      const cid = unquoted ? `"cid:${target.cid}"` : `cid:${target.cid}`;
+      out += `${html.slice(last, start)}${cid}`;
+      last = end;
+      if (target.candidate) adopted.set(target.candidate, target.cid);
+    });
+    if (last > 0) html = out + html.slice(last);
+  }
+  const owned = new Map(candidates.filter(c => c.ownCid).map(c => [c.ownCid.toLowerCase(), c]));
+  const match = cidMatcher(key => owned.has(key));
+  scanCidImageUrls(html, (cid) => {
+    const candidate = owned.get(match(cid));
+    if (candidate && !adopted.has(candidate) && (candidate.sizeKnown || candidate.inRelated)) {
+      adopted.set(candidate, candidate.ownCid);
+    }
+  });
+  if (!adopted.size) return html;
+
+  const delisted = new Set();
+  for (const [candidate, cid] of adopted) {
+    candidate.adopted = true;
+    if (candidate.entry && candidate.inRelated) delisted.add(candidate.entry);
+    results.inlineImages.push({
+      part: candidate.part,
+      type: candidate.type,
+      encoding: candidate.encoding,
+      cid,
+      filename: candidate.filename,
+      size: candidate.size,
+      disposition: candidate.disposition,
+      // Still listed: marked shownInline once embedded, so a forward does not send it twice.
+      ...(candidate.entry && !candidate.inRelated ? { listed: candidate.entry } : {}),
+    });
+  }
+  // In place: fetchMessageBody holds this array as the message's attachment list.
+  for (let i = results.attachments.length - 1; i >= 0; i--) {
+    if (delisted.has(results.attachments[i])) results.attachments.splice(i, 1);
+  }
+  return html;
 }
 
 function findPart(node, partNum) {
@@ -852,7 +1146,9 @@ function pushAttachedMessage(node, results) {
   });
 }
 
-function walkNode(node, results) {
+// inRelated: the part sits inside a multipart/related, whose images the HTML may reference by
+// Content-Location or file name rather than by Content-ID (RFC 2557).
+function walkNode(node, results, inRelated) {
   if (!node) return;
   const type = (node.type || '').toLowerCase();
   if (isAttachedMessage(node, type)) {
@@ -860,7 +1156,8 @@ function walkNode(node, results) {
     return;
   }
   if (node.childNodes && node.childNodes.length > 0) {
-    for (const child of node.childNodes) walkNode(child, results);
+    const related = inRelated || type === 'multipart/related';
+    for (const child of node.childNodes) walkNode(child, results, related);
     return;
   }
   const disposition = (node.disposition || '').toLowerCase();
@@ -873,14 +1170,16 @@ function walkNode(node, results) {
   // the attachment list — and an attached HTML file could even replace the
   // real message body.
   if (disposition === 'attachment') {
-    results.attachments.push({
+    const entry = {
       part: node.part || '1',
       filename: filename || 'attachment',
       type: node.type || 'application/octet-stream',
       encoding: node.encoding || 'base64',
       size: node.dispositionParameters?.size ? parseInt(node.dispositionParameters.size) : node.size || 0,
       disposition,
-    });
+    };
+    results.attachments.push(entry);
+    if (type.startsWith('image/')) noteBodyImageCandidate(node, results, inRelated, filename, entry);
   } else if (type === 'text/html' || type === 'application/xhtml+xml' || type === 'text/plain') {
     results.textParts.push({
       part: node.part || '1',
@@ -920,17 +1219,62 @@ function walkNode(node, results) {
       size: node.dispositionParameters?.size ? parseInt(node.dispositionParameters.size) : node.size || 0,
       disposition,
     });
+    // Inside a multipart/related the HTML may name it by Content-Location or file name instead.
+    if (inRelated) {
+      results.inlineImages[results.inlineImages.length - 1].relatedNames = [
+        (node.location || '').trim(),
+        filename && (!filename.includes('.') || IMAGE_NAME_RE.test(filename)) ? filename : '',
+      ];
+    }
   } else if (filename) {
     // Named non-text part without an explicit disposition — still an attachment.
-    results.attachments.push({
+    const entry = {
       part: node.part || '1',
       filename,
       type: node.type || 'application/octet-stream',
       encoding: node.encoding || 'base64',
       size: node.dispositionParameters?.size ? parseInt(node.dispositionParameters.size) : node.size || 0,
       disposition,
-    });
+    };
+    results.attachments.push(entry);
+    if (type.startsWith('image/')) noteBodyImageCandidate(node, results, inRelated, filename, entry);
+  } else if (type.startsWith('image/') && inRelated) {
+    // Unnamed, with no Content-ID: shown only if the HTML references its Content-Location.
+    noteBodyImageCandidate(node, results, inRelated, null, null);
   }
+}
+
+// An image filed as an attachment above (or, unnamed, not listed at all) that the HTML may still
+// show: one with a Content-ID (senders mark some cid: images Content-Disposition: attachment), or
+// one inside a multipart/related that the HTML references by Content-Location or file name.
+// Whether the HTML references it is known only once the body is decoded (adoptReferencedImages);
+// until then it stays an attachment, as the sync walk and the paperclip flag see it.
+//
+// imapflow reads a part's Content-Location from BODYSTRUCTURE only when more extension data
+// follows it, and the location is the last field, so it is practically never there.
+// needsLocation marks a part fetchMessageBody reads the MIME header of instead.
+function noteBodyImageCandidate(node, results, inRelated, filename, entry) {
+  const cid = (node.id || '').trim().replace(/^<|>$/g, '').trim();
+  if (!cid && !inRelated) return;
+  const location = (node.location || '').trim();
+  results.imageCandidates = results.imageCandidates || [];
+  results.imageCandidates.push({
+    entry,
+    part: node.part || '1',
+    type: node.type || 'image/png',
+    encoding: node.encoding || 'base64',
+    cid,
+    filename,
+    inRelated,
+    relatedNames: inRelated ? [location, filename && (!filename.includes('.') || IMAGE_NAME_RE.test(filename)) ? filename : ''] : [],
+    needsLocation: inRelated && !cid && !location,
+    // The server's count of the part's bytes, for MAX_ADOPTED_IMAGE_BYTES. imapflow reads a
+    // missing count as 0, so 0 is unknown.
+    serverSize: node.size,
+    sizeKnown: Number.isFinite(node.size) && node.size > 0,
+    size: node.dispositionParameters?.size ? parseInt(node.dispositionParameters.size) : node.size || 0,
+    disposition: (node.disposition || '').toLowerCase(),
+  });
 }
 
 
@@ -968,7 +1312,7 @@ function safeDate(d) {
 // connectStaggerMs:     base gap between successive account connects at startup, to keep the
 //                       initial burst under a provider's per-IP connection rate limit.
 //                       Omitted → 200ms default. See connectStaggerFor(). (#218)
-const PROVIDERS = {
+export const PROVIDERS = {
   google: {
     // Gmail folders are label memberships; matching Message-IDs are not proof of a move.
     labelStore: true,
@@ -1303,10 +1647,28 @@ const connectionPools = new Map(); // accountId -> { clients: [], waiting: [] }
 // through two connections.
 export const POOL_SIZE = 4;
 
-// How long an operation waits for a pooled connection before giving up. Longer than the
-// 30s commandTimeout that frees a stalled connection, so a caller queued behind a stall
-// normally gets served rather than failing just before the slot frees.
+// How long an operation waits for a pooled connection before giving up. Kept under the
+// body route's 40s deadline (BODY_FETCH_TIMEOUT_MS in routes/mail.js), so a click queued
+// behind busy connections gets the route's "account is busy" answer rather than its
+// timeout, and is never handed a connection after the route has given up on it. That
+// makes it shorter than POOL_STALL_TIMEOUT_MS, at a cost: a caller that queues in the
+// first 10s of a stall gives up before the stalled connection closes, so the replacement
+// that the next caller grows and then releases cannot serve it.
 export const ACQUIRE_TIMEOUT_MS = 35000;
+
+// How long a leased pooled connection may wait on a reply, with nothing arriving, before
+// it is closed. imapflow has no per-command timeout. The `commandTimeout` this file
+// used to pass is not an imapflow option in any release and was silently ignored, so a
+// stalled command held its slot until the 5-minute socketTimeout. With a pool of one
+// (Yahoo), every pooled operation on the account failed as busy for that whole time.
+// It measures silence, not duration: a long FETCH that keeps receiving data is never cut
+// off, and whole-folder writes are already chunked (_chunkedFolderOp). It cannot tell a
+// hung server from a slow one, though: a server that sends nothing for this long while it
+// works on one command is cut off too. Hence 45s rather than the 30s commandTimeout named:
+// a header SEARCH by Message-ID on a cold, large Dovecot mailbox, or a 500-UID Gmail MOVE,
+// can be silent for over 30s on a healthy server, and 45s is still far below the 5-minute
+// socketTimeout. An upload is different, see appendToFolder.
+export const POOL_STALL_TIMEOUT_MS = 45000;
 
 // Retained as a plugin compatibility helper. Ordinary ingestion never relocates a
 // cached row by Message-ID; explicit move operations use confirmed folder/UID mappings.
@@ -1554,10 +1916,11 @@ export function makeClientCfg(account, resolved, { enableIdle = false, policy = 
     auth: { user: account.auth_user, pass: decrypt(account.auth_pass) },
     logger: false,
     tls: tlsOpts,
-    // Prevent IMAP commands from hanging forever on half-open TCP connections.
-    // Without this, a silently-dead connection causes every sync call to wait
-    // indefinitely — the refresh button spins forever and auto-poll stops working.
-    commandTimeout: 30000,
+    // No per-command timeout here: imapflow has none (a `commandTimeout` key is silently
+    // ignored). Its TCP keepalive can catch a peer that has vanished, but a server that
+    // reads a command and never answers is bounded only by socketTimeout, 5 minutes of
+    // silence. A caller that cannot wait that long needs a deadline of its own, like the
+    // sync wall-clock races, folderStatus's STATUS race and POOL_STALL_TIMEOUT_MS.
   };
   // Targeted ENABLE opt-out for servers whose IMAP4rev2 is broken (#472: Strato answers
   // UID SEARCH ALL with an empty ESEARCH once IMAP4rev2 is enabled). Profile-driven so
@@ -1760,9 +2123,10 @@ export async function acquirePooledClient(account) {
     const entry = { resolve, reject, timer: null };
     entry.timer = setTimeout(() => {
       pool.waiters = pool.waiters.filter(w => w !== entry);
-      // Give up on the operation rather than on the limit. A stalled connection is
-      // released by its own commandTimeout at 30s, so a wait longer than that usually
-      // gets served; past it, the honest answer is that the account is saturated.
+      // Give up on the operation rather than on the limit. Usually the account is
+      // saturated. A connection closed under the queue (by POOL_STALL_TIMEOUT_MS, say)
+      // frees a slot without serving anyone, since only a release hands a connection
+      // over, so a waiter can also end up here while the pool is below its cap.
       const err = new Error('IMAP connections busy, please retry');
       err.poolExhausted = true;
       reject(err);
@@ -1797,8 +2161,38 @@ export function evictPool(accountId) {
   connectionPools.delete(accountId);
 }
 
-async function withFreshClient(account, fn) {
+// Puts POOL_STALL_TIMEOUT_MS on the socket for the length of a lease, then restores the
+// normal timeout. Only while leased, because an unused pooled connection needs the long
+// value: imapflow closes an idle session with no mailbox selected (the pre-warmed one,
+// or one that only ran STATUS) when the timer fires, and a short timer there would cost
+// a fresh login each time on providers that ration them (#474).
+// When the timer fires, imapflow sends a NOOP if the session is quiet for a reason (a held
+// lock, an open download, IDLE) and no command is waiting on a reply; otherwise it closes
+// the connection. That includes a FETCH held up by its own loop body: imapflow stops
+// reading while the body works on a row, so a body busy for 45s loses the connection.
+// client.socket and client.socketTimeout are imapflow internals: without them this does
+// nothing, and imapPoolStall.test.js runs a real ImapFlow so an upgrade that moves them
+// fails there.
+function guardPoolLease(client) {
+  const socket = client.socket;
+  const idleMs = client.socketTimeout;
+  const lease = { stalled: false, end() {} };
+  if (typeof socket?.setTimeout !== 'function' || !Number.isFinite(idleMs)) return lease;
+  const onError = (err) => { if (err?.code === 'ETIMEOUT') lease.stalled = true; };
+  client.on('error', onError);
+  socket.setTimeout(POOL_STALL_TIMEOUT_MS);
+  lease.end = () => {
+    client.off('error', onError);
+    if (!socket.destroyed) socket.setTimeout(idleMs);
+  };
+  return lease;
+}
+
+// Exported for imapPoolStall.test.js. stallTimeout: false keeps the lease on the normal
+// timeout, for an operation the stall timer cannot judge (appendToFolder).
+export async function withFreshClient(account, fn, { stallTimeout = true } = {}) {
   const client = await acquirePooledClient(account);
+  const lease = stallTimeout ? guardPoolLease(client) : { stalled: false, end() {} };
   try {
     return await fn(client);
   } catch (err) {
@@ -1813,8 +2207,18 @@ async function withFreshClient(account, fn) {
       pool.clients = pool.clients.filter(c => c !== client);
       drainWaiters(pool);
     }
+    // A command cut off by the stall timeout rejects with imapflow's 'Connection not
+    // available', which isConnectionRefusal reads as the provider refusing us, so callers
+    // such as the body prefetch would arm the refusal backoff. Name it for what was
+    // measured instead: nothing arrived, which a slow server or a busy fetch loop body
+    // causes as well as a hung one. 'timed out' is also what fetchMessageBody retries on a
+    // fresh login.
+    if (lease.stalled) {
+      throw new Error(`IMAP command timed out: nothing received for ${POOL_STALL_TIMEOUT_MS / 1000}s`, { cause: err });
+    }
     throw err;
   } finally {
+    lease.end();
     releasePooledClient(account, client);
   }
 }
@@ -2338,7 +2742,7 @@ export class ImapManager {
                 // A rejected or TIMED-OUT probe may leave a command in flight, and this is
                 // the account's only shared session, so it must not go back to the pool
                 // idle (review of round 5: a hung SEARCH held the one Yahoo session until
-                // imapflow's command timeout, and a click queued behind it could hit
+                // imapflow's 5-minute socketTimeout, and a click queued behind it could hit
                 // poolExhausted on a healthy account). close() is the same invariant the
                 // fresh path's finally enforces; the pool's close handler evicts it, and
                 // release() below then just closes a client that is no longer pooled.
@@ -2404,8 +2808,9 @@ export class ImapManager {
             // The body-fetch pool shares the same frozen/half-open fate as the deaf
             // persistent connection (same account, same server session state), so drop it
             // too. Otherwise the next body fetch hangs on a stale pooled connection until
-            // its 30s command timeout before retrying — the "preview hangs then eventually
-            // loads" symptom after a late-notification reconnect.
+            // the hand-out NOOP (POOL_REFRESH_TIMEOUT_MS) or, with no mailbox selected,
+            // POOL_STALL_TIMEOUT_MS closes it — the "preview hangs then eventually loads"
+            // symptom after a late-notification reconnect.
             evictPool(accountId);
 
             // Reconnect + catch up. If a sync was hung, the close() above makes it error and
@@ -3195,7 +3600,8 @@ export class ImapManager {
         usedFreshSyncClient = true;
         syncResult = await this._syncInboxWithFreshLogin(syncAccount);
       } else {
-        // Wall-clock timeout guards against half-open TCP sockets that never trigger commandTimeout.
+        // Wall-clock timeout guards against half-open TCP sockets, which imapflow can otherwise
+        // wait on for its 5-minute socketTimeout (it has no per-command timeout).
         syncResult = await Promise.race([
           this.syncMessages(syncAccount, activeClient, 'INBOX', 20, false, true),
           new Promise((_, reject) =>
@@ -4103,8 +4509,9 @@ export class ImapManager {
               return;
             }
             let safeHtml = null, text = null, atts = attachmentsFromStructure(msg);
-            if (prefetchBody && provider.fetchBody) {
-              const body = extractBodyFromMsg(msg);
+            // A deferred body is fetched when the message is opened (extractBodyFromMsg).
+            const body = prefetchBody && provider.fetchBody ? extractBodyFromMsg(msg) : null;
+            if (body && !body.deferred) {
               safeHtml = body.html ? sanitizeEmail(body.html) : null;
               text = body.text;
               atts = body.attachments;
@@ -4315,8 +4722,9 @@ export class ImapManager {
                 flagsToUpdate.push({ uid: msg.uid, isRead: msg.flags.has('\\Seen'), isStarred: msg.flags.has('\\Flagged') });
               }
             })();
-            // If the timeout wins the race, the fetch keeps running until ImapFlow's commandTimeout
-            // aborts it — swallow that late rejection so it isn't an unhandled rejection.
+            // If the timeout wins the race, the fetch keeps running until it finishes or the
+            // connection is closed under it — swallow that late rejection so it isn't an
+            // unhandled rejection.
             scan.catch(() => {});
             const outcome = await Promise.race([
               scan,
@@ -4852,8 +5260,9 @@ export class ImapManager {
                 }
                 let safeHtml = null, bodyText = null, atts = attachmentsFromStructure(msg);
 
-                if (cfg.fetchBody) {
-                  const body = extractBodyFromMsg(msg);
+                // A deferred body is fetched when the message is opened (extractBodyFromMsg).
+                const body = cfg.fetchBody ? extractBodyFromMsg(msg) : null;
+                if (body && !body.deferred) {
                   safeHtml = body.html ? sanitizeEmail(body.html) : null;
                   bodyText = body.text;
                   atts = body.attachments;
@@ -5458,11 +5867,15 @@ export class ImapManager {
 
   async appendToFolder(account, folder, rawMessage, flags = ['\\Seen']) {
     let uid = null;
+    // Without the pool's stall timeout. Node counts an upload as activity only while part
+    // of it is still queued in this process, so the tail draining from the kernel's send
+    // buffer and the server storing the message both read as silence: a large APPEND on a
+    // slow uplink would be closed at 45s with the server still receiving it.
     await withFreshClient(account, async (client) => {
       const result = await client.append(folder, rawMessage, flags);
       if (result === false) throw new Error('IMAP append returned false — server did not confirm message was stored');
       if (result && typeof result.uid === 'number') uid = result.uid;
-    });
+    }, { stallTimeout: false });
     console.log(`Appended to IMAP ${logAccount(account)}/${folder} uid=${uid}`);
     return { uid, folder };
   }
@@ -6034,6 +6447,9 @@ export class ImapManager {
       // so a later view should fetch again; a reference no part answers, or one over the repeat
       // budget, stays whatever happens and leaves this true (utils/cidRefs.js, #595).
       let cidsComplete = true;
+      // Parts embedded into the HTML as <img src> data: URIs, which a forward of this body or a
+      // reopened draft carries inline (embedInlineDataImages) and need not attach.
+      let inlineParts = [];
       // Always address by UID string with uid:true option — direct UID FETCH avoids
       // the two-step SEARCH+FETCH path that object-range syntax triggers, which can
       // silently return nothing on stale connections or when a server-side search
@@ -6142,21 +6558,6 @@ export class ImapManager {
           } catch { /* don't let a single part failure block others */ }
         }
 
-        // Inline images normally keep the batched value for performance. Retry
-        // only the suspicious ones: some servers return a text/html sibling for
-        // an image part in a multi-part batch, producing data:image URLs that
-        // contain escaped HTML/QP text and leak quoted-message garbage.
-        for (const part of inlineImages) {
-          const existing = prefetched.get(part.part);
-          if (!looksLikeTextPayload(existing)) continue;
-          try {
-            for await (const msg of client.fetch(uidStr, { uid: true, bodyParts: [part.part] }, { uid: true })) {
-              const v = msg.bodyParts?.get(part.part);
-              if (v && v.length > 0) prefetched.set(part.part, v);
-            }
-          } catch { /* keep the batched value if the direct retry fails */ }
-        }
-
         for (const part of results.textParts) {
           const buf = prefetched.get(part.part);
           if (!buf) continue;
@@ -6180,13 +6581,65 @@ export class ImapManager {
           }
         }
 
+        // Images filed as attachments that the HTML shows after all (#640). Their
+        // bytes are fetched only now, once the HTML is known to reference them, and
+        // so are the MIME headers of related images whose Content-Location the
+        // structure did not carry.
+        const unlocated = html ? (results.imageCandidates || []).filter(c => c.needsLocation) : [];
+        if (unlocated.length > 0) {
+          try {
+            for await (const msg of client.fetch(uidStr, { uid: true, bodyParts: unlocated.map(c => `${c.part}.MIME`) }, { uid: true })) {
+              for (const c of unlocated) {
+                const location = contentLocationFromMimeHeader(msg.bodyParts?.get(`${c.part}.mime`) || msg.bodyParts?.get(`${c.part}.MIME`));
+                if (location) c.relatedNames.unshift(location);
+              }
+            }
+          } catch { /* matched by file name alone */ }
+        }
+        html = adoptReferencedImages(results, html);
+        const adoptedParts = [...new Set(inlineImages.map(p => p.part))].filter(p => !prefetched.has(p));
+        if (adoptedParts.length > 0) {
+          try {
+            for await (const msg of client.fetch(uidStr, { uid: true, bodyParts: adoptedParts }, { uid: true })) {
+              if (msg.bodyParts) {
+                for (const [k, v] of msg.bodyParts) {
+                  if (v != null) prefetched.set(k, v);
+                }
+              }
+            }
+          } catch { /* their references stay cid: and the body is not marked settled */ }
+        }
+
+        // Inline images normally keep the batched value for performance. Retry
+        // only the suspicious ones: some servers return a text/html sibling for
+        // an image part in a multi-part batch, producing data:image URLs that
+        // contain escaped HTML/QP text and leak quoted-message garbage.
+        for (const part of inlineImages) {
+          const existing = prefetched.get(part.part);
+          if (!looksLikeTextPayload(existing)) continue;
+          try {
+            for await (const msg of client.fetch(uidStr, { uid: true, bodyParts: [part.part] }, { uid: true })) {
+              const v = msg.bodyParts?.get(part.part);
+              if (v && v.length > 0) prefetched.set(part.part, v);
+            }
+          } catch { /* keep the batched value if the direct retry fails */ }
+        }
+
         // Before Step 3, which replaces the cid: references this looks for.
         listUnreferencedInlineImages(results, html);
 
         // Step 3: replace cid: references in HTML with data: URIs so inline
         // images render inside the sandboxed srcdoc iframe
         if (html && inlineImages.length > 0) {
+          const embedded = new Set();
+          // Content-IDs embedded at an <img src>: the only images embedInlineDataImages carries
+          // into a forward or a saved draft. One shown only as a background stays to be attached.
+          const embeddedAsImg = new Set();
+          const imgSrcOffsets = new Set();
+          scanCidImageUrls(html, (cid, offset, isImgSrc) => { if (isImgSrc) imgSrcOffsets.add(offset); });
           const dataUris = new Map();
+          // The image whose bytes each Content-ID in dataUris carries.
+          const owners = new Map();
           const missingImages = new Set();
           for (const img of inlineImages) {
             if (!img.cid) continue;
@@ -6199,23 +6652,25 @@ export class ImapManager {
               ? buf.toString('ascii').replace(/\s/g, '')
               : buf.toString('base64');
             dataUris.set(key, `data:${img.type};base64,${b64}`);
+            owners.set(key, img);
           }
           if (dataUris.size > 0) {
-            const embedded = new Set();
             let repeatBudget = INLINE_IMAGE_REPEAT_BUDGET;
             let overBudget = 0;
             // Content-IDs, types and base64 text all come from the sender, so none of them
             // become regex or replacement-string syntax, and a single pass never rescans an
             // image it has inserted.
-            html = html.replace(CID_REFERENCE_RE, (ref, cid) => {
-              const key = cid.toLowerCase();
+            const match = cidMatcher(key => dataUris.has(key));
+            html = html.replace(CID_REFERENCE_RE, (ref, cid, offset) => {
+              const key = match(cid);
+              if (!key) return ref;
               const dataUri = dataUris.get(key);
-              if (!dataUri) return ref;
               if (embedded.has(key)) {
                 if (dataUri.length > repeatBudget) { overBudget++; return ref; }
                 repeatBudget -= dataUri.length;
               }
               embedded.add(key);
+              if (imgSrcOffsets.has(offset)) embeddedAsImg.add(key);
               return dataUri;
             });
             if (overBudget > 0) {
@@ -6223,10 +6678,15 @@ export class ImapManager {
             }
           }
           if (missingImages.size > 0) {
+            const match = cidMatcher(key => missingImages.has(key));
             for (const [, cid] of html.matchAll(CID_REFERENCE_RE)) {
-              if (missingImages.has(cid.toLowerCase())) { cidsComplete = false; break; }
+              if (match(cid)) { cidsComplete = false; break; }
             }
           }
+          const shown = [...owners].filter(([key]) => embeddedAsImg.has(key)).map(([, img]) => img);
+          inlineParts = [...new Set(shown.map(img => img.part))];
+          // An attached file the HTML also shows (adoptReferencedImages) stays listed, marked so.
+          for (const img of shown) if (img.listed) img.listed.shownInline = true;
         }
       } finally {
         lock.release();
@@ -6234,21 +6694,22 @@ export class ImapManager {
 
       // Some malformed emails include NUL bytes that PostgreSQL rejects in text
       // columns. Strip them once here so all callers are safe.
-      return { html: sanitizeStr(html), text: sanitizeStr(text), attachments, cidsComplete };
+      return { html: sanitizeStr(html), text: sanitizeStr(text), attachments, cidsComplete, inlineParts };
     });
 
     // Providers flagged preferFreshBodyFetch (e.g. PurelyMail) skip the shared pool on the
     // FIRST attempt too: a brand-new login avoids both contending with flag writes on the
     // size-2 pool and inheriting a frozen/half-open pooled session view that would hang the
-    // fetch until its command timeout. Other providers keep pool-first for TLS reuse.
+    // fetch until the hand-out NOOP or POOL_STALL_TIMEOUT_MS closed it. Other providers keep
+    // pool-first for TLS reuse.
     const firstAcquire = providerProfile(account).preferFreshBodyFetch ? withFreshLogin : withFreshClient;
     try {
       return await doFetch(firstAcquire);
     } catch (firstErr) {
       const detail = extractImapError(firstErr);
       // Retry once on any transient connection-level error (dead pool connection,
-      // half-open TCP, NAT expiry, commandTimeout, socket reset, or an empty UID FETCH
-      // from a frozen mailbox view). withFreshClient already evicted the bad pooled
+      // half-open TCP, NAT expiry, the pool's stall timeout, socket reset, or an empty
+      // UID FETCH from a frozen mailbox view). withFreshClient already evicted the bad pooled
       // connection; the retry then goes through a BRAND-NEW login (withFreshLogin) rather
       // than the pool, so a second frozen/dead pooled connection can't hang or blank it.
       // Server-side rejections (auth, permission, unknown mailbox) fail again and propagate.

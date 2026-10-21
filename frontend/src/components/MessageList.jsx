@@ -35,6 +35,9 @@ import ReplyDraftIndicator from './ReplyDraftIndicator.jsx';
 import SpamExplainModal from './SpamExplainModal.jsx';
 import { shortcutBus } from '../utils/shortcutBus.js';
 import { createLatestRequest } from '../utils/latestRequest.js';
+import { RowTagPills } from '../tags/TagPills.jsx';
+import TagFilterBar from '../tags/TagFilterBar.jsx';
+import TagBulkButton from '../tags/TagBulkButton.jsx';
 import { pendingMarkReadMap, completedMarkReadMap, setPending } from '../utils/pendingReads.js';
 import { applyDeleteGuard, clearDeleteGuard, clearPendingDelete, setCompletedDelete, setPendingDelete, threadDeleteGuardKey } from '../utils/pendingDeletes.js';
 import {
@@ -3501,6 +3504,8 @@ export default function MessageList() {
         </div>
       )}
 
+      <TagFilterBar />
+
       {/* Message list */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <div
@@ -3730,6 +3735,8 @@ export default function MessageList() {
                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
               </svg>
             </BulkBtn>
+
+            <TagBulkButton ids={[...selectedIds]} Btn={BulkBtn} />
 
             {/* Move button + folder picker */}
             <div style={{ position: 'relative' }} ref={folderPickerRef}>
@@ -4081,6 +4088,7 @@ export default function MessageList() {
             defaultSnoozeView={contextMenu.defaultSnoozeView}
             onClose={() => setContextMenu(null)}
             onAction={(action, data) => handleContextAction(action, contextMenu.message, data)}
+            tagTargetIds={selectedIds.size > 1 && selectedIds.has(contextMenu.message.id) ? [...selectedIds] : null}
           />
         )}
 
@@ -4780,6 +4788,7 @@ function ThreadRow({ message, isExpanded, threadMsgs, isLoadingThread, selectedM
             </span>
             <ReplyDraftIndicator message={message} listRow />
             <SpamBadge message={message} onClick={onExplainSpam} />
+            <RowTagPills message={message} />
           </div>
           {/* Row 3: snippet */}
           {showMessagePreviews && (
@@ -5109,6 +5118,7 @@ function MessageRow({ message, selected, lastViewed, isChecked, selectionMode, s
           </span>
           <ReplyDraftIndicator message={message} listRow />
           <SpamBadge message={message} onClick={onExplainSpam} />
+          <RowTagPills message={message} />
         </div>
 
         {/* Row 3: Snippet */}

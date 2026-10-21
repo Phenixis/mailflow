@@ -287,6 +287,29 @@ const SAME_VALUE_ALLOWED = {
   // "Tema" — "Theme" translates identically in es and it
   'admin.tabs.theme': [['es', 'it', 'ptBR']],
 
+  // ── Tags ───────────────────────────────────────────────────────────────────
+  // "Tags" — the same loanword in de, en, fr and ptBR
+  'tags.title': [['de', 'en', 'fr', 'ptBR']],
+  // "Name" / "Color" / "todas" / "{{n}} de {{total}}" — plain cognates
+  'tags.settings.name':  [['de', 'en'], ['it', 'ptBR']],
+  'tags.settings.color': [['en', 'es']],
+  'tags.filter.modeAll': [['es', 'ptBR']],
+  'tags.picker.count':   [['cs', 'pl'], ['es', 'ptBR']],
+  // "{{name}}: {{source}}" — the same punctuation pattern in most languages (fr and zhCN use their own)
+  'tags.pill.title': [['cs', 'de', 'en', 'es', 'it', 'ko', 'pl', 'ptBR', 'ru']],
+
+  // ── Jev tags plugin ────────────────────────────────────────────────────────
+  // "Jev" — product name, same everywhere
+  'jevTags.q.toggle': 'any',
+  // "{{n}} tokens" — "token" is the same loanword in en, es, fr, ptBR
+  'jevTags.why.runTokens': [['en', 'es', 'fr', 'ptBR']],
+  // Spanish and Portuguese share these words ("definida", "aplicada", "Ocultar")
+  'jevTags.conn.keySet': [['es', 'ptBR']],
+  'jevTags.why.applied': [['es', 'ptBR']],
+  'jevTags.why.hide':    [['es', 'ptBR']],
+  // "No significa…" — the same phrase in Spanish and Italian
+  'jevTags.q.noMeans': [['es', 'it']],
+
   // "Administration" — same spelling in de, en, fr
   'admin.tabs.groupAdmin': [['de', 'en', 'fr']],
 

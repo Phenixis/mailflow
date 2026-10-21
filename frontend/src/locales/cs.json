@@ -728,6 +728,10 @@
         "label": "Otevřít výběr složky",
         "description": "Zkopírovat vybranou zprávu do složky"
       },
+      "openTagPicker": {
+        "label": "Označit zprávu štítky",
+        "description": "Přidat nebo odebrat štítky u vybrané zprávy"
+      },
       "replyAllFromSelection": {
         "label": "Odpovědět všem z výběru",
         "description": "Odpovědět všem příjemcům vybrané zprávy"
@@ -1974,5 +1978,106 @@
     "trash": "Koš",
     "spam": "Spam",
     "archive": "Archiv"
+  },
+  "tags": {
+    "title": "Štítky",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "nastaveno ručně",
+      "auto": "přidáno pluginem {{source}}"
+    },
+    "header": {
+      "hide": "Skrýt štítky",
+      "none": "Zatím nejsou definovány žádné štítky. Vytvořte je v nastavení."
+    },
+    "filter": {
+      "all": "Veškerá pošta",
+      "label": "Filtr štítků",
+      "modeAny": "kterýkoli z nich",
+      "modeAll": "všechny",
+      "modeHint": "Zobrazit poštu s kterýmkoli z vybraných štítků, nebo jen poštu se všemi"
+    },
+    "picker": {
+      "count": "{{n}} z {{total}}"
+    },
+    "toast": {
+      "added": "Štítek „{{name}}“ přidán ke zprávám: {{n}}",
+      "removed": "Štítek „{{name}}“ odebrán ze zpráv: {{n}}",
+      "failed": "Štítek se nepodařilo aktualizovat: {{error}}"
+    },
+    "settings": {
+      "note": "Štítky se ukládají pouze v MailFlow; na vaše poštovní servery se nic nezapisuje.",
+      "name": "Název",
+      "color": "Barva",
+      "key": "Klíč (malá písmena, číslice, _)",
+      "on": "zapnuto",
+      "confirmDelete": "Smazat štítek „{{name}}“ a odebrat ho ze všech zpráv?",
+      "add": "Přidat štítek",
+      "create": "Vytvořit"
+    }
+  },
+  "jevTags": {
+    "why": {
+      "show": "Proč?",
+      "hide": "Skrýt",
+      "none": "Jev tuto zprávu ještě neposuzoval.",
+      "applied": "použito",
+      "notApplied": "nepoužito",
+      "subject": "pouze předmět",
+      "body": "předmět + výňatek z textu",
+      "runFailed": "Poslední spuštění selhalo: {{error}}",
+      "runBody": "Výňatek z textu odeslán",
+      "runNoBody": "Text neodeslán",
+      "runPrivate": "Soukromé: text neodeslán",
+      "runTokens": "{{n}} tokenů",
+      "bodyMissing": "Některé štítky byly nejisté, ale text zprávy se nepodařilo získat pro druhé posouzení.",
+      "reclassify": "Znovu zařadit"
+    },
+    "conn": {
+      "title": "Připojení k Jev",
+      "keyLabel": "Klíč API TypeSafe",
+      "keySet": "nastaven",
+      "keyEnv": "nastaven z prostředí serveru",
+      "keyUnset": "nenastaven",
+      "keyPlaceholderSet": "Zadejte nový klíč, kterým ji nahradíte",
+      "keyFormatHint": "Klíč TypeSafe obvykle začíná „apikey_“. Vložte celý klíč, ne jen jeho část.",
+      "saved": "Klíč API uložen",
+      "removed": "Klíč API odstraněn",
+      "low": "Pásmo nejistoty: pod = ne",
+      "high": "Pásmo nejistoty: nad = ano",
+      "private": "Soukromé nad (nulová důvěra)",
+      "body": "Výňatek z textu (znaky)",
+      "gate": "Štítek soukromí (text pošty s tímto štítkem se nikdy neodesílá)",
+      "privacyNote": "Odesílá se pouze odesílatel, předmět a dnešní datum. Výňatek z textu se odesílá jen u štítků, které zůstávají nejisté, a nikdy u zprávy vyhodnocené jako soukromá.",
+      "saveSettings": "Uložit nastavení",
+      "settingsSaved": "Nastavení uložena"
+    },
+    "acc": {
+      "title": "Účty k označování",
+      "note": "Pro účet se do Jev nic neodesílá, dokud jej zde nezapnete.",
+      "backfill": "Zařadit 100 nejnovějších dosud nezařazených zpráv v doručené poště",
+      "reclassify": "Znovu zařadit 100 nejnovějších zpráv v doručené poště (včetně již označených; ručně nastavené štítky zůstanou)",
+      "queued": "Zpráv ve frontě: {{n}} (zapnuté účty: {{a}})"
+    },
+    "q": {
+      "title": "O čem rozhoduje Jev",
+      "note": "Zapněte Jev pro libovolný štítek. Bez vlastní otázky se ptá „patří zpráva pod tento štítek?“ a učí se z pošty, kterou označíte ručně. Změny se týkají pošty zařazované od nynějška.",
+      "defaults": "Vytvořit štítky Soukromé, Důležité a Naléhavé s výchozími otázkami",
+      "created": "Výchozí štítky vytvořeny",
+      "off": "Jev tento štítek nepřiřazuje",
+      "toggle": "Jev",
+      "learn": "Učit se i z pošty, kterou jsem označil ručně (jejich předměty se odesílají jako příklady)",
+      "learnNote": "Jako příklady se používají jen předměty a jména odesílatelů, nikdy obsah zpráv. Použít lze i poštu označenou jako soukromou: její předmět a odesílatel se stejně odesílají k zařazení.",
+      "question": "Otázka ano/ne, na kterou Jev odpovídá (volitelné: nechte prázdné pro zobrazenou výchozí)",
+      "yesMeans": "Ano znamená…",
+      "yesExamples": "Příklady pro ano (jeden na řádek)",
+      "noMeans": "Ne znamená…",
+      "noExamples": "Příklady pro ne (jeden na řádek)",
+      "save": "Uložit otázku",
+      "saved": "Otázka uložena",
+      "remove": "Přestat používat Jev pro tento štítek"
+    }
   }
 }

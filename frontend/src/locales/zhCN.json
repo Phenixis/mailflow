@@ -861,6 +861,10 @@
         "label": "打开文件夹选择器",
         "description": "将选中的邮件复制到文件夹"
       },
+      "openTagPicker": {
+        "label": "给邮件加标签",
+        "description": "为所选邮件添加或移除标签"
+      },
       "replyAllFromSelection": {
         "label": "回复选中邮件的所有人",
         "description": "回复选中邮件的所有收件人"
@@ -2303,5 +2307,44 @@
     "formNote": "Gmail 和 Google Workspace 邮箱可以使用 Google 登录，而不必使用应用专用密码。",
     "appPasswordNote": "Gmail 需要应用专用密码，而不是你的常用密码。请为 Google 帐号开启两步验证，然后创建应用专用密码并填入密码栏。",
     "createAppPassword": "创建应用专用密码"
+  },
+  "tags": {
+    "title": "标签",
+    "pill": {
+      "title": "{{name}}：{{source}}"
+    },
+    "source": {
+      "manual": "手动设置",
+      "auto": "由 {{source}} 添加"
+    },
+    "header": {
+      "hide": "隐藏标签",
+      "none": "尚未定义标签。请在设置中创建。"
+    },
+    "filter": {
+      "all": "所有邮件",
+      "label": "标签筛选",
+      "modeAny": "任一标签",
+      "modeAll": "所有标签",
+      "modeHint": "显示带有任一所选标签的邮件，或仅显示带有全部标签的邮件"
+    },
+    "picker": {
+      "count": "{{total}} 封中的 {{n}} 封"
+    },
+    "toast": {
+      "added": "已将标签“{{name}}”添加到 {{n}} 封邮件",
+      "removed": "已从 {{n}} 封邮件中移除标签“{{name}}”",
+      "failed": "无法更新标签：{{error}}"
+    },
+    "settings": {
+      "note": "标签仅保存在 MailFlow 中，不会写入您的邮件服务器。",
+      "name": "名称",
+      "color": "颜色",
+      "key": "键名（小写字母、数字、_）",
+      "on": "启用",
+      "confirmDelete": "删除标签“{{name}}”并将其从所有邮件中移除？",
+      "add": "添加标签",
+      "create": "创建"
+    }
   }
 }

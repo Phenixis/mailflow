@@ -877,6 +877,10 @@
         "label": "Otwórz wybór folderu",
         "description": "Skopiuj wybraną wiadomość do folderu"
       },
+      "openTagPicker": {
+        "label": "Otaguj wiadomość",
+        "description": "Dodaj lub usuń tagi w zaznaczonej wiadomości"
+      },
       "replyAllFromSelection": {
         "label": "Odpowiedz wszystkim z wyboru",
         "description": "Odpowiedz wszystkim odbiorcom wybranej wiadomości"
@@ -2322,5 +2326,44 @@
     "formNote": "Skrzynki Gmail i Google Workspace mogą logować się przez Google zamiast hasłem aplikacji.",
     "appPasswordNote": "Gmail wymaga hasła aplikacji, a nie zwykłego hasła. Włącz weryfikację dwuetapową na koncie Google, utwórz hasło aplikacji i wpisz je w polu hasła.",
     "createAppPassword": "Utwórz hasło aplikacji"
+  },
+  "tags": {
+    "title": "Tagi",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "ustawiony ręcznie",
+      "auto": "dodany przez {{source}}"
+    },
+    "header": {
+      "hide": "Ukryj tagi",
+      "none": "Nie zdefiniowano jeszcze tagów. Utwórz je w ustawieniach."
+    },
+    "filter": {
+      "all": "Cała poczta",
+      "label": "Filtr tagów",
+      "modeAny": "dowolny z nich",
+      "modeAll": "wszystkie",
+      "modeHint": "Pokaż pocztę z dowolnym z wybranych tagów lub tylko pocztę ze wszystkimi"
+    },
+    "picker": {
+      "count": "{{n}} z {{total}}"
+    },
+    "toast": {
+      "added": "Dodano tag „{{name}}” do wiadomości: {{n}}",
+      "removed": "Usunięto tag „{{name}}” z wiadomości: {{n}}",
+      "failed": "Nie udało się zaktualizować tagu: {{error}}"
+    },
+    "settings": {
+      "note": "Tagi są przechowywane tylko w MailFlow; nic nie jest zapisywane na Twoich serwerach pocztowych.",
+      "name": "Nazwa",
+      "color": "Kolor",
+      "key": "Klucz (małe litery, cyfry, _)",
+      "on": "włączony",
+      "confirmDelete": "Usunąć tag „{{name}}” i usunąć go ze wszystkich wiadomości?",
+      "add": "Dodaj tag",
+      "create": "Utwórz"
+    }
   }
 }

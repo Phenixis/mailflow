@@ -861,6 +861,10 @@
         "label": "Open label picker",
         "description": "Copy the selected message to a folder"
       },
+      "openTagPicker": {
+        "label": "Tag message",
+        "description": "Add or remove tags on the selected message"
+      },
       "replyAllFromSelection": {
         "label": "Reply all from selection",
         "description": "Reply all to the selected message"
@@ -2303,5 +2307,44 @@
     "formNote": "Gmail and Google Workspace mailboxes can sign in with Google instead of an app password.",
     "appPasswordNote": "Gmail needs an app password, not your regular password. Turn on 2-Step Verification for your Google account, then create an app password and enter it in the password field.",
     "createAppPassword": "Create an app password"
+  },
+  "tags": {
+    "title": "Tags",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "set by hand",
+      "auto": "added by {{source}}"
+    },
+    "header": {
+      "hide": "Hide tags",
+      "none": "No tags defined yet. Create some in Settings."
+    },
+    "filter": {
+      "all": "All mail",
+      "label": "Tag filter",
+      "modeAny": "any of them",
+      "modeAll": "all of them",
+      "modeHint": "Show mail with any of the selected tags, or only mail with all of them"
+    },
+    "picker": {
+      "count": "{{n}} of {{total}}"
+    },
+    "toast": {
+      "added": "Tag \"{{name}}\" added to {{n}} message(s)",
+      "removed": "Tag \"{{name}}\" removed from {{n}} message(s)",
+      "failed": "Could not update the tag: {{error}}"
+    },
+    "settings": {
+      "note": "Tags are stored in MailFlow only; nothing is written to your mail servers.",
+      "name": "Name",
+      "color": "Color",
+      "key": "Key (lowercase letters, digits, _)",
+      "on": "on",
+      "confirmDelete": "Delete the tag \"{{name}}\" and remove it from every message?",
+      "add": "Add a tag",
+      "create": "Create"
+    }
   }
 }

@@ -946,6 +946,10 @@
         "label": "Otevřít výběr složky",
         "description": "Zkopírovat vybranou zprávu do složky"
       },
+      "openTagPicker": {
+        "label": "Označit zprávu štítky",
+        "description": "Přidat nebo odebrat štítky u vybrané zprávy"
+      },
       "replyAllFromSelection": {
         "label": "Odpovědět všem z výběru",
         "description": "Odpovědět všem příjemcům vybrané zprávy"
@@ -2322,5 +2326,44 @@
     "formNote": "Schránky Gmail a Google Workspace se mohou místo hesla aplikace přihlásit přes Google.",
     "appPasswordNote": "Gmail vyžaduje heslo aplikace, ne vaše běžné heslo. Zapněte pro účet Google dvoufázové ověření, vytvořte heslo aplikace a zadejte ho do pole pro heslo.",
     "createAppPassword": "Vytvořit heslo aplikace"
+  },
+  "tags": {
+    "title": "Štítky",
+    "pill": {
+      "title": "{{name}}: {{source}}"
+    },
+    "source": {
+      "manual": "nastaveno ručně",
+      "auto": "přidáno pluginem {{source}}"
+    },
+    "header": {
+      "hide": "Skrýt štítky",
+      "none": "Zatím nejsou definovány žádné štítky. Vytvořte je v nastavení."
+    },
+    "filter": {
+      "all": "Veškerá pošta",
+      "label": "Filtr štítků",
+      "modeAny": "kterýkoli z nich",
+      "modeAll": "všechny",
+      "modeHint": "Zobrazit poštu s kterýmkoli z vybraných štítků, nebo jen poštu se všemi"
+    },
+    "picker": {
+      "count": "{{n}} z {{total}}"
+    },
+    "toast": {
+      "added": "Štítek „{{name}}“ přidán ke zprávám: {{n}}",
+      "removed": "Štítek „{{name}}“ odebrán ze zpráv: {{n}}",
+      "failed": "Štítek se nepodařilo aktualizovat: {{error}}"
+    },
+    "settings": {
+      "note": "Štítky se ukládají pouze v MailFlow; na vaše poštovní servery se nic nezapisuje.",
+      "name": "Název",
+      "color": "Barva",
+      "key": "Klíč (malá písmena, číslice, _)",
+      "on": "zapnuto",
+      "confirmDelete": "Smazat štítek „{{name}}“ a odebrat ho ze všech zpráv?",
+      "add": "Přidat štítek",
+      "create": "Vytvořit"
+    }
   }
 }

@@ -27,3 +27,15 @@ test('screens that list the tags depend on the definitions revision', () => {
   const settings = readFileSync(new URL('./TagsSettings.jsx', import.meta.url), 'utf8');
   assert.match(settings, /bumpTagDefinitions\(\)/, 'creating, editing or deleting a tag announces the change');
 });
+
+test('the Jev settings reload their tag list when the definitions change', () => {
+  const source = readFileSync(new URL('../plugins/jev-tags/JevSettings.jsx', import.meta.url), 'utf8');
+  assert.match(source, /useTagDefinitionsRevision\(\)/);
+  assert.match(source, /bumpTagDefinitions\(\)/, 'creating the default tags announces them to the other screens');
+});
+
+test('the Why panel tells when a second look was impossible because the body could not be retrieved', () => {
+  const source = readFileSync(new URL('../plugins/jev-tags/JevWhy.jsx', import.meta.url), 'utf8');
+  assert.match(source, /run\?\.bodyMissing/);
+  assert.match(source, /jevTags\.why\.bodyMissing/);
+});

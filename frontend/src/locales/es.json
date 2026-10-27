@@ -2346,5 +2346,67 @@
       "add": "Añadir una etiqueta",
       "create": "Crear"
     }
+  },
+  "jevTags": {
+    "why": {
+      "show": "¿Por qué?",
+      "hide": "Ocultar",
+      "none": "Jev aún no ha mirado este mensaje.",
+      "applied": "aplicada",
+      "notApplied": "no aplicada",
+      "subject": "solo el asunto",
+      "body": "asunto + extracto del cuerpo",
+      "runFailed": "La última ejecución falló: {{error}}",
+      "runBody": "Extracto del cuerpo enviado",
+      "runNoBody": "Cuerpo no enviado",
+      "runPrivate": "Privado: cuerpo no enviado",
+      "runTokens": "{{n}} tokens",
+      "bodyMissing": "Algunas etiquetas eran inciertas, pero no se pudo obtener el cuerpo del mensaje para una segunda revisión.",
+      "reclassify": "Reclasificar"
+    },
+    "conn": {
+      "title": "Conexión con Jev",
+      "keyLabel": "Clave de API de TypeSafe",
+      "keySet": "definida",
+      "keyEnv": "definida, desde el entorno del servidor",
+      "keyUnset": "sin definir",
+      "keyPlaceholderSet": "Introduce una clave nueva para reemplazarla",
+      "keyFormatHint": "Una clave de TypeSafe suele empezar por «apikey_». Pega la clave completa, no solo una parte.",
+      "saved": "Clave de API guardada",
+      "removed": "Clave de API eliminada",
+      "low": "Zona de duda: por debajo = no",
+      "high": "Zona de duda: por encima = sí",
+      "private": "Privado por encima de (confianza cero)",
+      "body": "Extracto del cuerpo (caracteres)",
+      "gate": "Etiqueta de privacidad (el cuerpo del correo con ella nunca se envía)",
+      "privacyNote": "Solo se envían el remitente, el asunto y la fecha de hoy. El extracto del cuerpo solo se envía para las etiquetas aún inciertas y nunca para un mensaje considerado privado.",
+      "saveSettings": "Guardar ajustes",
+      "settingsSaved": "Ajustes guardados"
+    },
+    "acc": {
+      "title": "Cuentas que etiquetar",
+      "note": "No se envía nada a Jev para una cuenta hasta que la actives aquí.",
+      "backfill": "Clasificar los 100 mensajes más recientes sin clasificar de la bandeja de entrada",
+      "reclassify": "Reclasificar los 100 mensajes más recientes de la bandeja de entrada (incluidos los ya etiquetados; se conservan las etiquetas puestas a mano)",
+      "queued": "{{n}} mensaje(s) en cola ({{a}} cuenta(s) activada(s))"
+    },
+    "q": {
+      "title": "Lo que decide Jev",
+      "note": "Activa Jev para cualquier etiqueta. Sin una pregunta propia, plantea «¿pertenece el mensaje a esta etiqueta?» y aprende del correo que etiquetas a mano. Los cambios se aplican al correo clasificado a partir de ahora.",
+      "defaults": "Crear las etiquetas Privado, Importante y Urgente con preguntas predeterminadas",
+      "created": "Etiquetas predeterminadas creadas",
+      "off": "Jev no asigna esta etiqueta",
+      "toggle": "Jev",
+      "learn": "Aprender también del correo que etiqueté a mano (sus asuntos se envían como ejemplos)",
+      "learnNote": "Solo se usan como ejemplos los asuntos y los nombres de remitente, nunca el contenido de los mensajes. También se puede usar el correo etiquetado como privado: su asunto y remitente ya se envían para clasificarlo.",
+      "question": "La pregunta de sí/no que responde Jev (opcional: déjala vacía para usar la predeterminada mostrada)",
+      "yesMeans": "Sí significa…",
+      "yesExamples": "Ejemplos de sí (uno por línea)",
+      "noMeans": "No significa…",
+      "noExamples": "Ejemplos de no (uno por línea)",
+      "save": "Guardar pregunta",
+      "saved": "Pregunta guardada",
+      "remove": "Dejar de usar Jev para esta etiqueta"
+    }
   }
 }

@@ -317,6 +317,18 @@ const SAME_VALUE_ALLOWED = {
   // "{{name}}: {{source}}" — the same punctuation pattern in most languages (fr and zhCN use their own)
   'tags.pill.title': [['cs', 'de', 'en', 'es', 'it', 'ko', 'pl', 'ptBR', 'ru']],
 
+  // ── Jev tags plugin ────────────────────────────────────────────────────────
+  // "Jev" — product name, same everywhere
+  'jevTags.q.toggle': 'any',
+  // "{{n}} tokens" — "token" is the same loanword in en, es, fr, ptBR
+  'jevTags.why.runTokens': [['en', 'es', 'fr', 'ptBR']],
+  // Spanish and Portuguese share these words ("definida", "aplicada", "Ocultar")
+  'jevTags.conn.keySet': [['es', 'ptBR']],
+  'jevTags.why.applied': [['es', 'ptBR']],
+  'jevTags.why.hide':    [['es', 'ptBR']],
+  // "No significa…" — the same phrase in Spanish and Italian
+  'jevTags.q.noMeans': [['es', 'it']],
+
   // "Administration" — same spelling in de, en, fr
   'admin.tabs.groupAdmin': [['de', 'en', 'fr']],
 

@@ -2346,5 +2346,67 @@
       "add": "Adicionar uma tag",
       "create": "Criar"
     }
+  },
+  "jevTags": {
+    "why": {
+      "show": "Por quê?",
+      "hide": "Ocultar",
+      "none": "O Jev ainda não analisou esta mensagem.",
+      "applied": "aplicada",
+      "notApplied": "não aplicada",
+      "subject": "apenas o assunto",
+      "body": "assunto + trecho do corpo",
+      "runFailed": "A última execução falhou: {{error}}",
+      "runBody": "Trecho do corpo enviado",
+      "runNoBody": "Corpo não enviado",
+      "runPrivate": "Privado: corpo não enviado",
+      "runTokens": "{{n}} tokens",
+      "bodyMissing": "Algumas tags estavam incertas, mas não foi possível obter o corpo da mensagem para uma segunda análise.",
+      "reclassify": "Reclassificar"
+    },
+    "conn": {
+      "title": "Conexão com o Jev",
+      "keyLabel": "Chave de API da TypeSafe",
+      "keySet": "definida",
+      "keyEnv": "definida, pelo ambiente do servidor",
+      "keyUnset": "não definida",
+      "keyPlaceholderSet": "Digite uma nova chave para substituí-la",
+      "keyFormatHint": "Uma chave da TypeSafe geralmente começa com \"apikey_\". Cole a chave inteira, não apenas uma parte.",
+      "saved": "Chave de API salva",
+      "removed": "Chave de API removida",
+      "low": "Faixa de dúvida: abaixo = não",
+      "high": "Faixa de dúvida: acima = sim",
+      "private": "Privado acima de (confiança zero)",
+      "body": "Trecho do corpo (caracteres)",
+      "gate": "Tag de privacidade (o corpo de e-mails com ela nunca é enviado)",
+      "privacyNote": "Apenas o remetente, o assunto e a data de hoje são enviados. O trecho do corpo só é enviado para tags ainda incertas e nunca para uma mensagem considerada privada.",
+      "saveSettings": "Salvar configurações",
+      "settingsSaved": "Configurações salvas"
+    },
+    "acc": {
+      "title": "Contas a marcar com tags",
+      "note": "Nada é enviado ao Jev para uma conta até que você a ative aqui.",
+      "backfill": "Classificar as 100 mensagens mais recentes ainda não classificadas da caixa de entrada",
+      "reclassify": "Reclassificar as 100 mensagens mais recentes da caixa de entrada (inclusive as já marcadas; as tags definidas manualmente são mantidas)",
+      "queued": "{{n}} mensagem(ns) na fila ({{a}} conta(s) ativada(s))"
+    },
+    "q": {
+      "title": "O que o Jev decide",
+      "note": "Ative o Jev para qualquer tag. Sem uma pergunta sua, ele pergunta \"a mensagem pertence a esta tag?\" e aprende com os e-mails que você marca manualmente. As alterações valem para os e-mails classificados daqui em diante.",
+      "defaults": "Criar as tags Privado, Importante e Urgente com perguntas padrão",
+      "created": "Tags padrão criadas",
+      "off": "O Jev não atribui esta tag",
+      "toggle": "Jev",
+      "learn": "Aprender também com os e-mails que marquei manualmente (os assuntos são enviados como exemplos)",
+      "learnNote": "Apenas assuntos e nomes de remetentes são usados como exemplos, nunca o conteúdo das mensagens. E-mails marcados como privados também podem ser usados: o assunto e o remetente deles já são enviados para classificá-los.",
+      "question": "A pergunta de sim/não que o Jev responde (opcional: deixe em branco para usar a padrão exibida)",
+      "yesMeans": "Sim significa…",
+      "yesExamples": "Exemplos de sim (um por linha)",
+      "noMeans": "Não significa…",
+      "noExamples": "Exemplos de não (um por linha)",
+      "save": "Salvar pergunta",
+      "saved": "Pergunta salva",
+      "remove": "Parar de usar o Jev para esta tag"
+    }
   }
 }

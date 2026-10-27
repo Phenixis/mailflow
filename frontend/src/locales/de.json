@@ -2346,5 +2346,67 @@
       "add": "Tag hinzufügen",
       "create": "Erstellen"
     }
+  },
+  "jevTags": {
+    "why": {
+      "show": "Warum?",
+      "hide": "Ausblenden",
+      "none": "Jev hat diese Nachricht noch nicht angesehen.",
+      "applied": "angewendet",
+      "notApplied": "nicht angewendet",
+      "subject": "nur Betreff",
+      "body": "Betreff + Textauszug",
+      "runFailed": "Letzter Lauf fehlgeschlagen: {{error}}",
+      "runBody": "Textauszug gesendet",
+      "runNoBody": "Text nicht gesendet",
+      "runPrivate": "Privat: Text nicht gesendet",
+      "runTokens": "{{n}} Tokens",
+      "bodyMissing": "Einige Tags waren unsicher, aber der Nachrichtentext konnte für eine zweite Prüfung nicht abgerufen werden.",
+      "reclassify": "Neu klassifizieren"
+    },
+    "conn": {
+      "title": "Jev-Verbindung",
+      "keyLabel": "TypeSafe-API-Schlüssel",
+      "keySet": "gesetzt",
+      "keyEnv": "gesetzt, aus der Serverumgebung",
+      "keyUnset": "nicht gesetzt",
+      "keyPlaceholderSet": "Neuen Schlüssel zum Ersetzen eingeben",
+      "keyFormatHint": "Ein TypeSafe-Schlüssel beginnt in der Regel mit „apikey_“. Fügen Sie den ganzen Schlüssel ein, nicht nur einen Teil.",
+      "saved": "API-Schlüssel gespeichert",
+      "removed": "API-Schlüssel entfernt",
+      "low": "Unsicherheitsbereich: darunter = nein",
+      "high": "Unsicherheitsbereich: darüber = ja",
+      "private": "Privat ab (Zero Trust)",
+      "body": "Textauszug (Zeichen)",
+      "gate": "Datenschutz-Tag (bei E-Mails mit diesem Tag wird der Text nie gesendet)",
+      "privacyNote": "Es werden nur Absender, Betreff und das heutige Datum gesendet. Der Textauszug wird nur für Tags gesendet, die danach noch unsicher sind, und nie für eine als privat bewertete Nachricht.",
+      "saveSettings": "Einstellungen speichern",
+      "settingsSaved": "Einstellungen gespeichert"
+    },
+    "acc": {
+      "title": "Zu taggende Konten",
+      "note": "Für ein Konto wird nichts an Jev gesendet, bis Sie es hier aktivieren.",
+      "backfill": "Die 100 neuesten noch nicht klassifizierten Nachrichten im Posteingang klassifizieren",
+      "reclassify": "Die 100 neuesten Nachrichten im Posteingang neu klassifizieren (auch bereits getaggte; manuell gesetzte Tags bleiben erhalten)",
+      "queued": "{{n}} Nachricht(en) in der Warteschlange ({{a}} Konto/Konten aktiviert)"
+    },
+    "q": {
+      "title": "Was Jev entscheidet",
+      "note": "Aktivieren Sie Jev für beliebige Tags. Ohne eigene Frage fragt er „Gehört die Nachricht zu diesem Tag?“ und lernt aus den E-Mails, die Sie von Hand taggen. Änderungen gelten für ab jetzt klassifizierte E-Mails.",
+      "defaults": "Die Tags Privat, Wichtig und Dringend mit Standardfragen erstellen",
+      "created": "Standard-Tags erstellt",
+      "off": "Jev vergibt diesen Tag nicht",
+      "toggle": "Jev",
+      "learn": "Auch aus von mir manuell getaggten E-Mails lernen (deren Betreffzeilen werden als Beispiele gesendet)",
+      "learnNote": "Als Beispiele dienen nur Betreffzeilen und Absendernamen, nie der Inhalt von Nachrichten. Auch als privat getaggte E-Mails können verwendet werden: Betreff und Absender werden ohnehin zur Klassifizierung gesendet.",
+      "question": "Die Ja/Nein-Frage, die Jev beantwortet (optional: leer lassen, um die angezeigte Standardfrage zu verwenden)",
+      "yesMeans": "Ja bedeutet …",
+      "yesExamples": "Beispiele für Ja (eines pro Zeile)",
+      "noMeans": "Nein bedeutet …",
+      "noExamples": "Beispiele für Nein (eines pro Zeile)",
+      "save": "Frage speichern",
+      "saved": "Frage gespeichert",
+      "remove": "Jev für diesen Tag nicht mehr verwenden"
+    }
   }
 }

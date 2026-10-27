@@ -2346,5 +2346,67 @@
       "add": "Ajouter un tag",
       "create": "Créer"
     }
+  },
+  "jevTags": {
+    "why": {
+      "show": "Pourquoi ?",
+      "hide": "Masquer",
+      "none": "Jev n'a pas encore regardé ce message.",
+      "applied": "appliqué",
+      "notApplied": "non appliqué",
+      "subject": "objet seulement",
+      "body": "objet + extrait du corps",
+      "runFailed": "Dernière exécution en échec : {{error}}",
+      "runBody": "Extrait du corps envoyé",
+      "runNoBody": "Corps non envoyé",
+      "runPrivate": "Privé : corps non envoyé",
+      "runTokens": "{{n}} tokens",
+      "bodyMissing": "Certains tags étaient incertains, mais le corps du message n'a pas pu être récupéré pour un second examen.",
+      "reclassify": "Reclasser"
+    },
+    "conn": {
+      "title": "Connexion à Jev",
+      "keyLabel": "Clé API TypeSafe",
+      "keySet": "définie",
+      "keyEnv": "définie, depuis l'environnement du serveur",
+      "keyUnset": "non définie",
+      "keyPlaceholderSet": "Saisir une nouvelle clé pour la remplacer",
+      "keyFormatHint": "Une clé TypeSafe commence en général par « apikey_ ». Collez la clé entière, pas seulement une partie.",
+      "saved": "Clé API enregistrée",
+      "removed": "Clé API supprimée",
+      "low": "Zone de doute : en dessous = non",
+      "high": "Zone de doute : au-dessus = oui",
+      "private": "Privé au-dessus de (confiance zéro)",
+      "body": "Extrait du corps (caractères)",
+      "gate": "Tag de confidentialité (le corps d'un mail qui le porte n'est jamais envoyé)",
+      "privacyNote": "Seuls l'expéditeur, l'objet et la date du jour sont envoyés. L'extrait du corps n'est envoyé que pour les tags encore incertains, et jamais pour un message jugé privé.",
+      "saveSettings": "Enregistrer les réglages",
+      "settingsSaved": "Réglages enregistrés"
+    },
+    "acc": {
+      "title": "Comptes à taguer",
+      "note": "Rien n'est envoyé à Jev pour un compte tant que vous ne l'activez pas ici.",
+      "backfill": "Classer les 100 messages non classés les plus récents de la boîte de réception",
+      "reclassify": "Reclasser les 100 messages les plus récents (y compris déjà taggés ; les tags posés à la main sont conservés)",
+      "queued": "{{n}} message(s) en file ({{a}} compte(s) activé(s))"
+    },
+    "q": {
+      "title": "Ce que Jev décide",
+      "note": "Activez Jev pour n'importe quel tag. Sans question de votre part, il demande « le message relève-t-il de ce tag ? » et apprend des mails que vous taguez à la main. Les changements s'appliquent aux mails classés à partir de maintenant.",
+      "defaults": "Créer les tags Private, Important et Urgent avec leurs questions par défaut",
+      "created": "Tags par défaut créés",
+      "off": "Jev n'attribue pas ce tag",
+      "toggle": "Jev",
+      "learn": "Apprendre aussi des mails que j'ai tagués à la main (leurs objets sont envoyés comme exemples)",
+      "learnNote": "Seuls les objets et noms d'expéditeur servent d'exemples, jamais le contenu des mails. Les mails tagués privés peuvent aussi servir : leur objet et leur expéditeur sont de toute façon envoyés pour les classer.",
+      "question": "La question oui/non posée à Jev (facultatif : laissez vide pour utiliser celle affichée par défaut)",
+      "yesMeans": "Oui signifie…",
+      "yesExamples": "Exemples de oui (un par ligne)",
+      "noMeans": "Non signifie…",
+      "noExamples": "Exemples de non (un par ligne)",
+      "save": "Enregistrer la question",
+      "saved": "Question enregistrée",
+      "remove": "Ne plus utiliser Jev pour ce tag"
+    }
   }
 }

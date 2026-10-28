@@ -1110,6 +1110,8 @@
       "actionSetCategory": "Définir la catégorie",
       "actionNotify": "Me notifier",
       "actionNotifyHint": "Me prévenir même si la règle déplace ce message ou le marque comme lu.",
+      "actionSilence": "Ne pas notifier",
+      "actionSilenceHint": "Ni son, ni toast, ni push pour ce mail, qui reste non lu. « Me notifier » sur une autre règle qui correspond l'emporte.",
       "actionSetCategorySelect": "Choisir une catégorie…",
       "actionMovePlaceholder": "Nom du dossier",
       "stopProcessing": "Arrêter le traitement des règles suivantes si celle-ci correspond",

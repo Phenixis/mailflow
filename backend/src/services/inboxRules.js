@@ -166,7 +166,7 @@ function evaluateRule(rule, msg) {
 
 // Applies inbox rules to a batch of new INBOX messages. Returns { remaining, mutedIds, notifyMessages }:
 //   remaining      — messages still in INBOX after rules ran (moved/archived/deleted excluded)
-//   mutedIds       — IDs of remaining messages that had mark_read applied by a rule;
+//   mutedIds       — IDs of remaining messages a rule marked read or set to "Don't notify";
 //                    the caller uses this to suppress sound/toast/push for silenced mail
 //   notifyMessages — messages a rule with the "notify" action moved or archived out of the
 //                    Inbox (#588): filing mail used to make it silent, and these are alerted for
@@ -338,6 +338,8 @@ export async function applyInboxRules(messages, account, imapManager) {
       for (const action of actions.filter(action => action.type !== 'forward')) {
         // "Notify me" does nothing to the message; it only marks it for an alert.
         if (action.type === 'notify') { notifyIds.add(msg.id); continue; }
+        // "Don't notify" leaves the message as it is (unread) and only silences its alert.
+        if (action.type === 'silence') { mutedIds.add(msg.id); continue; }
         const isDest = action.type === 'move' || action.type === 'archive' || action.type === 'delete';
         if (isDest && destSeen) continue;
         // Skip destination actions for already-relocated messages — the source UID no

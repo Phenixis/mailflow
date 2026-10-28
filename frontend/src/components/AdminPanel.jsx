@@ -6176,7 +6176,7 @@ function RulesTab() {
   function actionSummary(rule) {
     const acts = Array.isArray(rule.actions) ? rule.actions : [];
     if (!acts.length) return '—';
-    const labels = { mark_read: t('admin.rules.actionMarkRead'), star: t('admin.rules.actionStar'), forward: t('admin.rules.actionForward'), archive: t('admin.rules.actionArchive'), delete: t('admin.rules.actionDelete'), move: t('admin.rules.actionMove'), set_category: t('admin.rules.actionSetCategory'), notify: t('admin.rules.actionNotify') };
+    const labels = { mark_read: t('admin.rules.actionMarkRead'), star: t('admin.rules.actionStar'), forward: t('admin.rules.actionForward'), archive: t('admin.rules.actionArchive'), delete: t('admin.rules.actionDelete'), move: t('admin.rules.actionMove'), set_category: t('admin.rules.actionSetCategory'), notify: t('admin.rules.actionNotify'), silence: t('admin.rules.actionSilence') };
     // Show the move destination and the category so same-named rules are tellable apart at a glance.
     return acts.map(a => {
       if (a.type === 'move' && a.value) return `${labels.move} → ${a.value}`;
@@ -6213,6 +6213,7 @@ function RulesTab() {
     { type: 'move',      label: t('admin.rules.actionMove') },
     { type: 'set_category', label: t('admin.rules.actionSetCategory') },
     { type: 'notify',    label: t('admin.rules.actionNotify') },
+    { type: 'silence',   label: t('admin.rules.actionSilence') },
   ];
 
   if (formMode) {
@@ -6458,6 +6459,11 @@ function RulesTab() {
                 {type === 'notify' && (
                   <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 22, marginTop: 2 }}>
                     {t('admin.rules.actionNotifyHint')}
+                  </div>
+                )}
+                {type === 'silence' && (
+                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 22, marginTop: 2 }}>
+                    {t('admin.rules.actionSilenceHint')}
                   </div>
                 )}
                 {type === 'set_category' && checked && (

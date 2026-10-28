@@ -1858,6 +1858,8 @@
       "actionSetCategory": "Kategorie festlegen",
       "actionNotify": "Benachrichtigen",
       "actionNotifyHint": "Auch benachrichtigen, wenn die Regel die E-Mail verschiebt oder als gelesen markiert.",
+      "actionSilence": "Nicht benachrichtigen",
+      "actionSilenceHint": "Kein Ton, kein Hinweis und kein Push für diese Mail; sie bleibt ungelesen. „Benachrichtigen“ aus einer passenden Regel hat Vorrang.",
       "actionSetCategorySelect": "Kategorie auswählen…",
       "nameLabel": "Regelname",
       "editButton": "Bearbeiten",

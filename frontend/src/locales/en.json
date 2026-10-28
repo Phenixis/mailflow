@@ -1117,6 +1117,8 @@
       "actionSetCategory": "Set category",
       "actionNotify": "Notify me",
       "actionNotifyHint": "Alert me even when the rule moves this mail or marks it read.",
+      "actionSilence": "Don't notify",
+      "actionSilenceHint": "No sound, toast or push for this mail; it stays unread. \"Notify me\" from any matching rule wins.",
       "actionSetCategorySelect": "Select a category…",
       "actionMovePlaceholder": "Exact IMAP folder path (e.g. Work or INBOX/Work)",
       "actionMoveSelectFolder": "Select a folder…",

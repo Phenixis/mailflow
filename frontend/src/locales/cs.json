@@ -1509,6 +1509,8 @@
       "actionSetCategory": "Nastavit kategorii",
       "actionNotify": "Upozornit mě",
       "actionNotifyHint": "Upozornit, i když pravidlo e-mail přesune nebo označí jako přečtený.",
+      "actionSilence": "Neupozorňovat",
+      "actionSilenceHint": "U této zprávy žádný zvuk, oznámení ani push; zůstane nepřečtená. Přednost má „Upozornit mě“ z jakéhokoli odpovídajícího pravidla.",
       "actionSetCategorySelect": "Vyberte kategorii…",
       "actionMovePlaceholder": "Přesná cesta ke složce IMAP (např. Práce nebo INBOX/Práce)",
       "actionMoveSelectFolder": "Vyberte složku…",

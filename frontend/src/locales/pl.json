@@ -1133,6 +1133,8 @@
       "actionSetCategory": "Ustaw kategorię",
       "actionNotify": "Powiadom mnie",
       "actionNotifyHint": "Powiadamiaj, nawet gdy reguła przenosi wiadomość lub oznacza ją jako przeczytaną.",
+      "actionSilence": "Nie powiadamiaj",
+      "actionSilenceHint": "Bez dźwięku, komunikatu i push dla tej wiadomości; pozostaje nieprzeczytana. „Powiadom mnie” z dowolnej pasującej reguły ma pierwszeństwo.",
       "actionSetCategorySelect": "Wybierz kategorię…",
       "actionMovePlaceholder": "Dokładna ścieżka folderu IMAP (np. Praca lub Odebrane/Praca)",
       "actionMoveSelectFolder": "Wybierz folder…",

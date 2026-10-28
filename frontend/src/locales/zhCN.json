@@ -1110,6 +1110,8 @@
       "actionSetCategory": "设置分类",
       "actionNotify": "通知我",
       "actionNotifyHint": "即使规则移动此邮件或将其标为已读，也通知我。",
+      "actionSilence": "不通知",
+      "actionSilenceHint": "此邮件不发出声音、提示或推送，并保持未读。任何匹配规则中的“通知我”优先。",
       "actionSetCategorySelect": "选择分类…",
       "actionMovePlaceholder": "文件夹名称",
       "actionMoveSelectFolder": "选择文件夹…",

@@ -1110,6 +1110,8 @@
       "actionSetCategory": "Imposta categoria",
       "actionNotify": "Avvisami",
       "actionNotifyHint": "Avvisami anche se la regola sposta l'email o la segna come letta.",
+      "actionSilence": "Non notificare",
+      "actionSilenceHint": "Nessun suono, avviso o push per questa email, che resta non letta. «Notificami» di qualsiasi regola corrispondente ha la precedenza.",
       "actionSetCategorySelect": "Seleziona una categoria…",
       "actionMovePlaceholder": "Nome cartella",
       "stopProcessing": "Interrompi l'elaborazione delle regole successive se questa corrisponde",

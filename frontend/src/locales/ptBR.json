@@ -1117,6 +1117,8 @@
       "actionSetCategory": "Definir categoria",
       "actionNotify": "Notificar-me",
       "actionNotifyHint": "Avisar mesmo quando a regra move o e-mail ou o marca como lido.",
+      "actionSilence": "Não notificar",
+      "actionSilenceHint": "Sem som, aviso ou push para este e-mail; ele continua não lido. \"Notificar-me\" de qualquer regra correspondente prevalece.",
       "actionSetCategorySelect": "Selecione uma categoria…",
       "actionMovePlaceholder": "Caminho IMAP exato da pasta (ex.: Trabalho ou INBOX/Trabalho)",
       "actionMoveSelectFolder": "Selecione uma pasta…",

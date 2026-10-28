@@ -1110,6 +1110,8 @@
       "actionSetCategory": "Establecer categoría",
       "actionNotify": "Notificarme",
       "actionNotifyHint": "Avisarme aunque la regla mueva este correo o lo marque como leído.",
+      "actionSilence": "No notificar",
+      "actionSilenceHint": "Sin sonido, aviso ni push para este correo; sigue sin leer. «Notificarme» de cualquier regla que coincida tiene prioridad.",
       "actionSetCategorySelect": "Selecciona una categoría…",
       "actionMovePlaceholder": "Nombre de la carpeta",
       "stopProcessing": "Detener el procesamiento de reglas posteriores si esta coincide",

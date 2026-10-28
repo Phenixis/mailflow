@@ -1116,6 +1116,8 @@
       "actionSetCategory": "카테고리 지정",
       "actionNotify": "알림 받기",
       "actionNotifyHint": "규칙이 메일을 이동하거나 읽음으로 표시해도 알림을 받습니다.",
+      "actionSilence": "알리지 않음",
+      "actionSilenceHint": "이 메일에 대해 소리, 알림, 푸시를 보내지 않으며 읽지 않은 상태로 둡니다. 일치하는 다른 규칙의 \"알림 받기\"가 우선합니다.",
       "actionSetCategorySelect": "카테고리 선택…",
       "saving": "저장 중…",
       "actionMovePlaceholder": "정확한 IMAP 폴더 경로(예: 직장 또는 INBOX/직장)",

@@ -95,6 +95,9 @@ bounded to 30 seconds; timeout and sync failure are logged and reject the promis
 releasing a still-running owner's claim or
 starting a competing pass. Retries can sync only after the active claim releases; a
 never-released claim requires owner cleanup or restart.
+A plugin that tags new mail off the sync path answers `awaitTags({ account, messageIds })` with a promise
+that settles once it is done with those messages: when an account has inbox rules that read tags, core
+holds the rules and the alert for its new Inbox mail until then (two minutes at most).
 
 ### Data
 

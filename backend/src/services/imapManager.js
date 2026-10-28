@@ -25,6 +25,7 @@ import { resolveForConnection, createPinnedLookup } from './hostValidation.js';
 import { getConnectionPolicy } from './connectionPolicy.js';
 import { applyInboxRules, applyBlockList, newMailAlerts } from './inboxRules.js';
 import { carryUpdate, hasCarries, rememberDroppedRows, takeCarry } from './movedRowCarry.js';
+import { shouldHoldForTags, runRulesAfterTags } from './tagDeferredRules.js';
 import { classifyAndTagMessage } from './spamPipeline.js';
 import { generateVCard } from '../utils/vcard.js';
 import { mimeToExtension, standardImageType, rasterImageTypeOfName, sniffImageType } from '../utils/inlineImages.js';
@@ -4993,6 +4994,8 @@ export class ImapManager {
         const maxKnownUid = Number(max_uid);
 
         let newMessages = [];
+        // New Inbox mail whose rules wait for a tagging plugin (rules that read tags, tagDeferredRules.js).
+        let heldForTags = false;
         let insertedCount = 0;
         let broadcastedNewMessages = false;
 
@@ -5404,13 +5407,18 @@ export class ImapManager {
             } catch (err) {
               console.error('blockList error:', err.message);
             }
-            try {
-              const rulesResult = await applyInboxRules(newMessages, account, this);
-              newMessages = rulesResult.remaining;
-              mutedIds = rulesResult.mutedIds;
-              notifyMessages = rulesResult.notifyMessages || [];
-            } catch (err) {
-              console.error('inboxRules error:', err.message);
+            heldForTags = newMessages.length > 0 && await shouldHoldForTags(account, {
+              hasTagger: () => pluginRegistry.hasActiveAsync('awaitTags', { account }),
+            });
+            if (!heldForTags) {
+              try {
+                const rulesResult = await applyInboxRules(newMessages, account, this);
+                newMessages = rulesResult.remaining;
+                mutedIds = rulesResult.mutedIds;
+                notifyMessages = rulesResult.notifyMessages || [];
+              } catch (err) {
+                console.error('inboxRules error:', err.message);
+              }
             }
             // Any unread candidate no longer in `newMessages` was moved out of / deleted from
             // INBOX by the block-list or a rule. Only genuinely-DELETED ones are excluded from
@@ -5435,20 +5443,12 @@ export class ImapManager {
           }
           // alertMessages: remaining messages not silenced by a mark_read rule, and mail a "Notify
           // me" rule filed elsewhere. A push for one of those opens it by id, in its new folder.
-          const { alertMessages, alertCount, send } = newMailAlerts({ remaining: newMessages, mutedIds, notifyMessages });
-          if (send) this.broadcast({
-            type: 'new_messages', accountId: account.id,
-            folder, messages: newMessages.slice(-5), count: newMessages.length,
-            alertMessages: alertMessages.slice(-5), alertCount,
-          }, account.user_id);
+          // Mail held for its tags is listed now and alerted for once the rules have run on it.
+          const alerts = heldForTags
+            ? newMailAlerts({ remaining: newMessages, mutedIds: new Set(newMessages.map(m => m.id)) })
+            : newMailAlerts({ remaining: newMessages, mutedIds, notifyMessages });
+          this._publishNewMail(account, folder, newMessages, alerts);
           if (newMessages.length > 0) broadcastedNewMessages = true;
-          // Notifications — INBOX only, alert-eligible messages only. Non-inbox folder syncs
-          // (Archive, Spam, on-demand) can surface old or filtered messages; sending push
-          // for them or for mark_read-silenced messages would be misleading.
-          // Fire-and-forget: push errors are non-fatal.
-          if (folder === 'INBOX' && alertMessages.length > 0) {
-            notifyNewMail({ userId: account.user_id, accountName: account.name, alertMessages, alertCount });
-          }
           // Pre-warm the body cache for newly arrived messages so clicking one
           // immediately after receipt doesn't require a live IMAP fetch.
           // Only do this for small batches (periodic new mail, not initial bulk sync),
@@ -5492,6 +5492,16 @@ export class ImapManager {
           await pluginRegistry.runHook('inboxIngest', {
             mgr: this.pluginFacade, account, newInboxIds, deletedIds: ingestDeletedIds,
           });
+        }
+        if (heldForTags) {
+          const held = newMessages;
+          const messageIds = held.map(m => m.id);
+          console.log(`Holding ${held.length} new message(s) for ${logAccount(account)} until tagged: rules read tags`);
+          runRulesAfterTags({
+            account, messages: held, imapManager: this,
+            waitForTags: () => pluginRegistry.collectHook('awaitTags', { account, messageIds }),
+            alert: (remaining, alerts) => this._publishNewMail(account, 'INBOX', remaining, alerts),
+          }).catch(err => console.error(`Rules after tags failed for ${logAccount(account)}:`, err.message));
         }
         // Reconcile the cached unread badge from actual rows now that this pass's inserts, flag
         // updates, and any INBOX rule/block-list moves have all landed. The provisional
@@ -6013,6 +6023,23 @@ export class ImapManager {
     } finally {
       if (bfClient) { try { bfClient.close(); } catch { /* already disconnected */ } }
       this.backfillRunning.delete(backfillKey);
+    }
+  }
+
+  // Tell the user's clients about new mail in `folder` and alert (toast, sound, Web Push) for
+  // `alertMessages`, the part of it no rule silenced.
+  _publishNewMail(account, folder, newMessages, { alertMessages, alertCount, send }) {
+    if (send) this.broadcast({
+      type: 'new_messages', accountId: account.id,
+      folder, messages: newMessages.slice(-5), count: newMessages.length,
+      alertMessages: alertMessages.slice(-5), alertCount,
+    }, account.user_id);
+    // Notifications — INBOX only, alert-eligible messages only. Non-inbox folder syncs
+    // (Archive, Spam, on-demand) can surface old or filtered messages; sending push
+    // for them or for mark_read-silenced messages would be misleading.
+    // Fire-and-forget: push errors are non-fatal.
+    if (folder === 'INBOX' && alertMessages.length > 0) {
+      notifyNewMail({ userId: account.user_id, accountName: account.name, alertMessages, alertCount });
     }
   }
 

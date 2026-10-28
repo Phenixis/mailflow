@@ -24,6 +24,25 @@ describe('tag queue', () => {
     expect(run).toHaveBeenCalledTimes(2);
   });
 
+  it('settled waits for the given messages only, failed ones included', async () => {
+    const release = {};
+    const run = vi.fn((_u, id) => new Promise((resolve, reject) => { release[id] = { resolve, reject }; }));
+    const q = createQueue({ run, concurrency: 3 });
+    q.enqueue('u1', ['a', 'b', 'c']);
+    let settled = false;
+    const done = q.settled(['a', 'b', 'never-queued']).then(() => { settled = true; });
+    await new Promise((r) => setTimeout(r, 0)); // jobs start on a microtask
+    release.a.resolve();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(settled).toBe(false);
+    release.b.reject(new Error('jev down'));
+    await done;
+    expect(settled).toBe(true);
+    release.c.resolve();
+    await q.idle();
+    await q.settled(['a']); // nothing left: resolves at once
+  });
+
   it('caps the backlog', () => {
     const q = createQueue({ run: () => new Promise(() => {}), concurrency: 1, maxQueue: 2 });
     expect(q.enqueue('u1', ['a', 'b', 'c', 'd', 'e'])).toBe(2); // the cap applies to the waiting backlog

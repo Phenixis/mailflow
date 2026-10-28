@@ -74,6 +74,9 @@ A plugin exports a manifest (see `gtd/index.js`): `{ id, name, version, tier, ro
 Core mounts the router and fires the hooks through the registry — core never calls a plugin directly.
 `hooks` are the plugin's halves of generic core events (e.g. `inboxIngest`, `afterLabelCopy`,
 `onSentMessage`, `validateAccountSettings`, `enrichAccount`, …); `sync` is an optional periodic tick.
+A plugin that tags new mail off the sync path answers `awaitTags({ account, messageIds })` with a promise
+that settles once it is done with those messages: when an account has inbox rules that read tags, core
+holds the rules and the alert for its new Inbox mail until then (two minutes at most).
 
 ### Data
 

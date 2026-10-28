@@ -10,6 +10,7 @@ vi.mock('../utils/mailUtils.js', () => ({
   adjustFolderCounts: vi.fn(),
 }));
 vi.mock('./ruleForwarder.js', () => ({ forwardRuleMessage: vi.fn() }));
+vi.mock('./tags/store.js', () => ({ tagsForMessages: vi.fn() }));
 
 const { query } = await import('./db.js');
 const {
@@ -21,7 +22,8 @@ const {
   adjustFolderCounts,
 } = await import('../utils/mailUtils.js');
 const { forwardRuleMessage } = await import('./ruleForwarder.js');
-import { applyInboxRules, newMailAlerts } from './inboxRules.js';
+const { tagsForMessages } = await import('./tags/store.js');
+import { applyInboxRules, newMailAlerts, accountHasTagRules } from './inboxRules.js';
 
 const account = { id: 'acc-1', user_id: 'user-1', folder_mappings: {} };
 
@@ -390,6 +392,65 @@ describe('applyInboxRules — read_status condition', () => {
 
     expect(mockImap.bulkMoveMessages).toHaveBeenCalledTimes(1);
     expect(result.remaining).toHaveLength(0);
+  });
+});
+
+describe('applyInboxRules — tag condition', () => {
+  const tagRule = (operator) => mkRule([{ type: 'mark_read' }], { conditions: [{ field: 'tag', operator, value: 'urgent' }] });
+
+  it('matches "has" when the message carries the tag', async () => {
+    query.mockResolvedValueOnce({ rows: [tagRule('has')] });
+    query.mockResolvedValue({ rows: [] });
+    tagsForMessages.mockResolvedValue({ 'msg-1': [{ key: 'urgent' }] });
+
+    const result = await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(tagsForMessages).toHaveBeenCalledWith('user-1', ['msg-1']);
+    expect(result.mutedIds.has('msg-1')).toBe(true);
+  });
+
+  it('does not match "has" when the message carries another tag', async () => {
+    query.mockResolvedValueOnce({ rows: [tagRule('has')] });
+    tagsForMessages.mockResolvedValue({ 'msg-1': [{ key: 'newsletter' }] });
+
+    const result = await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(result.mutedIds.size).toBe(0);
+  });
+
+  it('matches "not_has" on an untagged message', async () => {
+    query.mockResolvedValueOnce({ rows: [tagRule('not_has')] });
+    query.mockResolvedValue({ rows: [] });
+    tagsForMessages.mockResolvedValue({});
+
+    const result = await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(result.mutedIds.has('msg-1')).toBe(true);
+  });
+
+  it('matches neither "has" nor "not_has" when the tags could not be loaded', async () => {
+    query.mockResolvedValueOnce({ rows: [tagRule('not_has'), { ...tagRule('has'), id: 'rule-2' }] });
+    tagsForMessages.mockRejectedValue(new Error('db down'));
+
+    const result = await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(result.mutedIds.size).toBe(0);
+  });
+
+  it('does not look tags up when no rule reads them', async () => {
+    query.mockResolvedValueOnce({ rows: [mkRule([{ type: 'mark_read' }])] });
+    query.mockResolvedValue({ rows: [] });
+
+    await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(tagsForMessages).not.toHaveBeenCalled();
+  });
+
+  it('accountHasTagRules is true only when an enabled rule reads a tag', async () => {
+    query.mockResolvedValueOnce({ rows: [mkRule([{ type: 'star' }])] });
+    expect(await accountHasTagRules('user-1', 'acc-1')).toBe(false);
+    query.mockResolvedValueOnce({ rows: [mkRule([{ type: 'star' }]), tagRule('has')] });
+    expect(await accountHasTagRules('user-1', 'acc-1')).toBe(true);
   });
 });
 
@@ -894,6 +955,30 @@ describe('applyInboxRules — set_category (#489)', () => {
 });
 
 // "Notify me" (#588): a rule that files new mail out of the Inbox can still alert for it.
+describe('applyInboxRules — silence', () => {
+  it('silences the alert and leaves the message unread and in the Inbox', async () => {
+    query.mockResolvedValueOnce({ rows: [mkRule([{ type: 'silence' }])] });
+
+    const result = await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(result.mutedIds.has('msg-1')).toBe(true);
+    expect(result.remaining).toHaveLength(1);
+    expect(mockImap.setFlag).not.toHaveBeenCalled();
+    expect(newMailAlerts(result).alertCount).toBe(0);
+  });
+
+  it('loses to "Notify me" from another matching rule', async () => {
+    query.mockResolvedValueOnce({ rows: [
+      mkRule([{ type: 'notify' }]),
+      { ...mkRule([{ type: 'silence' }]), id: 'rule-2' },
+    ] });
+
+    const result = await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(newMailAlerts(result).alertCount).toBe(1);
+  });
+});
+
 describe('applyInboxRules — notify', () => {
   const run = async (rules, { moveFails = false } = {}) => {
     query.mockResolvedValueOnce({ rows: rules }).mockResolvedValue({ rows: [] });

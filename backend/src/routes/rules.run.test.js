@@ -7,6 +7,7 @@ vi.mock('../middleware/auth.js', () => ({
 vi.mock('../services/inboxRules.js', () => ({
   applyInboxRules: vi.fn(),
   isDangerousRegex: () => false,
+  TAG_OPERATORS: new Set(['has', 'not_has']),
 }));
 
 import express from 'express';

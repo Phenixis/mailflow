@@ -5924,6 +5924,7 @@ function RulesTab() {
   const [runningRules, setRunningRules] = useState(false);
   const [runResult, setRunResult] = useState(null);
   const [runError, setRunError] = useState('');
+  const [tagDefs, setTagDefs] = useState([]);
 
   // Drag-and-drop state for rules reorder
   const [ruleDragIdx, setRuleDragIdx] = useState(null);
@@ -5961,6 +5962,7 @@ function RulesTab() {
     api.getRules()
       .then(data => { setRules(data); setLoading(false); })
       .catch(() => setLoading(false));
+    api.tagDefinitions().then(setTagDefs).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -6163,6 +6165,10 @@ function RulesTab() {
     return conds.slice(0, 2).map(c => {
       if (c.field === 'has_attachment') return t('admin.rules.fieldHasAttachment');
       if (c.field === 'read_status') return c.value === 'read' ? t('admin.rules.readStatusRead') : t('admin.rules.readStatusUnread');
+      if (c.field === 'tag') {
+        const tagName = tagDefs.find(d => d.key === c.value)?.name || c.value;
+        return `${c.operator === 'not_has' ? t('admin.rules.opNotHasTag') : t('admin.rules.opHasTag')} "${tagName}"`;
+      }
       return `${c.field} ${c.operator} "${c.value}"`;
     }).join(` ${rule.condition_logic} `) + (conds.length > 2 ? ` +${conds.length - 2}` : '');
   }
@@ -6170,7 +6176,7 @@ function RulesTab() {
   function actionSummary(rule) {
     const acts = Array.isArray(rule.actions) ? rule.actions : [];
     if (!acts.length) return '—';
-    const labels = { mark_read: t('admin.rules.actionMarkRead'), star: t('admin.rules.actionStar'), forward: t('admin.rules.actionForward'), archive: t('admin.rules.actionArchive'), delete: t('admin.rules.actionDelete'), move: t('admin.rules.actionMove'), set_category: t('admin.rules.actionSetCategory'), notify: t('admin.rules.actionNotify') };
+    const labels = { mark_read: t('admin.rules.actionMarkRead'), star: t('admin.rules.actionStar'), forward: t('admin.rules.actionForward'), archive: t('admin.rules.actionArchive'), delete: t('admin.rules.actionDelete'), move: t('admin.rules.actionMove'), set_category: t('admin.rules.actionSetCategory'), notify: t('admin.rules.actionNotify'), silence: t('admin.rules.actionSilence') };
     // Show the move destination and the category so same-named rules are tellable apart at a glance.
     return acts.map(a => {
       if (a.type === 'move' && a.value) return `${labels.move} → ${a.value}`;
@@ -6187,6 +6193,7 @@ function RulesTab() {
     { value: 'header',         label: t('admin.rules.fieldHeader') },
     { value: 'has_attachment', label: t('admin.rules.fieldHasAttachment') },
     { value: 'read_status',    label: t('admin.rules.fieldReadStatus') },
+    { value: 'tag',            label: t('admin.rules.fieldTag') },
   ];
   const OPERATORS = [
     { value: 'contains',     label: t('admin.rules.opContains') },
@@ -6206,6 +6213,7 @@ function RulesTab() {
     { type: 'move',      label: t('admin.rules.actionMove') },
     { type: 'set_category', label: t('admin.rules.actionSetCategory') },
     { type: 'notify',    label: t('admin.rules.actionNotify') },
+    { type: 'silence',   label: t('admin.rules.actionSilence') },
   ];
 
   if (formMode) {
@@ -6281,7 +6289,13 @@ function RulesTab() {
                         if (i !== idx) return c;
                         const next = { ...c, field: newField };
                         if (newField !== 'header') delete next.headerName;
+                        // has / not_has and a tag key mean nothing to the text fields.
+                        if (c.field === 'tag' && newField !== 'tag') { delete next.operator; next.value = ''; }
                         if (newField === 'has_attachment') { delete next.operator; delete next.value; }
+                        else if (newField === 'tag') {
+                          next.operator = 'has';
+                          next.value = tagDefs.find(d => d.enabled)?.key || '';
+                        }
                         else if (newField === 'read_status') {
                           delete next.operator;
                           if (next.value !== 'read' && next.value !== 'unread') next.value = 'unread';
@@ -6295,7 +6309,7 @@ function RulesTab() {
                 >
                   {FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                 </select>
-                {cond.field !== 'has_attachment' && cond.field !== 'read_status' && (
+                {cond.field !== 'has_attachment' && cond.field !== 'read_status' && cond.field !== 'tag' && (
                   <>
                     <select
                       style={{ ...inputStyle, width: 'auto', flex: '0 0 auto' }}
@@ -6312,6 +6326,29 @@ function RulesTab() {
                       onChange={e => setCondition(idx, 'value', e.target.value)}
                       placeholder="value"
                     />
+                  </>
+                )}
+                {cond.field === 'tag' && (
+                  <>
+                    <select
+                      style={{ ...inputStyle, width: 'auto', flex: '0 0 auto' }}
+                      value={cond.operator === 'not_has' ? 'not_has' : 'has'}
+                      onChange={e => setCondition(idx, 'operator', e.target.value)}
+                    >
+                      <option value="has">{t('admin.rules.opHasTag')}</option>
+                      <option value="not_has">{t('admin.rules.opNotHasTag')}</option>
+                    </select>
+                    <select
+                      style={{ ...inputStyle, flex: 1 }}
+                      value={cond.value || ''}
+                      onChange={e => setCondition(idx, 'value', e.target.value)}
+                    >
+                      {!cond.value && <option value="">{t('admin.rules.tagPick')}</option>}
+                      {cond.value && !tagDefs.some(d => d.key === cond.value) && <option value={cond.value}>{cond.value}</option>}
+                      {tagDefs.filter(d => d.enabled || d.key === cond.value).map(d => (
+                        <option key={d.id} value={d.key}>{d.name}</option>
+                      ))}
+                    </select>
                   </>
                 )}
                 {cond.field === 'read_status' && (
@@ -6347,6 +6384,11 @@ function RulesTab() {
               {cond.field === 'body' && (
                 <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>
                   {t('admin.rules.bodyConditionNote')}
+                </p>
+              )}
+              {cond.field === 'tag' && (
+                <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>
+                  {t('admin.rules.tagConditionNote')}
                 </p>
               )}
             </div>
@@ -6417,6 +6459,11 @@ function RulesTab() {
                 {type === 'notify' && (
                   <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 22, marginTop: 2 }}>
                     {t('admin.rules.actionNotifyHint')}
+                  </div>
+                )}
+                {type === 'silence' && (
+                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 22, marginTop: 2 }}>
+                    {t('admin.rules.actionSilenceHint')}
                   </div>
                 )}
                 {type === 'set_category' && checked && (

@@ -10,6 +10,7 @@
 import { query } from '../db.js';
 
 const DEF_COLUMNS = 'id, key, name, color';
+export const KEY_RE = /^[a-z][a-z0-9_]{0,39}$/;
 
 export async function listDefinitions(userId) {
   const { rows } = await query(

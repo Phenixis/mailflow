@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { query } from '../services/db.js';
 import { findOwnedAccount, findOwnedMessage } from '../services/ownership.js';
 import { requireAuth } from '../middleware/auth.js';
-import { applyInboxRules, isDangerousRegex, RULE_CATEGORIES } from '../services/inboxRules.js';
+import { applyInboxRules, isDangerousRegex, RULE_CATEGORIES, TAG_OPERATORS } from '../services/inboxRules.js';
+import { KEY_RE as TAG_KEY_RE } from '../services/tags/store.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -30,6 +31,10 @@ export function validateConditions(conditions) {
     }
     if (cond.field === 'read_status' && !['read', 'unread'].includes(String(cond.value))) {
       return 'Read status condition must be "read" or "unread"';
+    }
+    if (cond.field === 'tag') {
+      if (!TAG_OPERATORS.has(cond.operator)) return 'Tag condition must be "has" or "not_has"';
+      if (!TAG_KEY_RE.test(String(cond.value || ''))) return 'Tag condition needs a tag';
     }
     if (cond.operator === 'regex' && isDangerousRegex(String(cond.value || ''))) {
       return 'Regex pattern is invalid or too complex (possible catastrophic backtracking)';

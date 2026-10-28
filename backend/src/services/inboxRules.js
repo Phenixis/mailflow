@@ -1,4 +1,5 @@
 import { query } from './db.js';
+import { tagsForMessages } from './tags/store.js';
 import { resolveArchiveFolder, isAllMailFolder, resolveTrashFolder, resolveAllTrashPaths, getDeleteStrategy, adjustFolderCounts } from '../utils/mailUtils.js';
 
 async function getRulesForAccount(userId, accountId) {
@@ -120,6 +121,16 @@ function evaluateCondition(cond, msg) {
     case 'body': {
       return matchOperator(operator, msg._bodyText || '', value);
     }
+    case 'tag': {
+      // _tagKeys is only set once the tags loaded, so a failed lookup matches neither has nor not_has
+      // (a "not tagged X" rule must not fire on every message because the tags could not be read).
+      if (!(msg._tagKeys instanceof Set)) return false;
+      const key = typeof value === 'string' ? value.trim() : '';
+      if (!key) return false;
+      if (operator === 'has') return msg._tagKeys.has(key);
+      if (operator === 'not_has') return !msg._tagKeys.has(key);
+      return false;
+    }
     case 'header': {
       const headerName = (cond.headerName || '').toLowerCase().trim();
       if (!headerName) return false;
@@ -130,6 +141,18 @@ function evaluateCondition(cond, msg) {
     default:
       return false;
   }
+}
+
+export const TAG_OPERATORS = new Set(['has', 'not_has']);
+
+export function ruleUsesTags(rule) {
+  return Array.isArray(rule?.conditions) && rule.conditions.some(c => c?.field === 'tag');
+}
+
+// Whether any enabled rule for this account reads tags, so the sync knows to wait for a tagging
+// plugin before running the rules on new mail.
+export async function accountHasTagRules(userId, accountId) {
+  return (await getRulesForAccount(userId, accountId)).some(ruleUsesTags);
 }
 
 function evaluateRule(rule, msg) {
@@ -185,6 +208,15 @@ export async function applyInboxRules(messages, account, imapManager) {
       }
     } catch (err) {
       console.error('inboxRules: failed to fetch body_text for rules:', err.message);
+    }
+  }
+
+  if (rules.some(ruleUsesTags)) {
+    try {
+      const byId = await tagsForMessages(account.user_id, messages.map(m => m.id));
+      for (const msg of messages) msg._tagKeys = new Set((byId[msg.id] || []).map(t => t.key));
+    } catch (err) {
+      console.error('inboxRules: failed to load tags for rules — tag conditions will not match:', err.message);
     }
   }
 

@@ -257,6 +257,7 @@ const SAME_VALUE_ALLOWED = {
 
   // "Header" — technical email term used as-is in de and en
   'admin.rules.fieldHeader': [['de', 'en']],
+  'admin.rules.fieldTag': [['de', 'en', 'fr', 'it', 'pl', 'ptBR']],
 
   // "Actions" / "Conditions" — French loanwords, same in en and fr
   'admin.rules.actionsLabel':    [['en', 'fr']],

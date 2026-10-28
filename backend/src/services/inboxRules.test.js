@@ -955,6 +955,30 @@ describe('applyInboxRules — set_category (#489)', () => {
 });
 
 // "Notify me" (#588): a rule that files new mail out of the Inbox can still alert for it.
+describe('applyInboxRules — silence', () => {
+  it('silences the alert and leaves the message unread and in the Inbox', async () => {
+    query.mockResolvedValueOnce({ rows: [mkRule([{ type: 'silence' }])] });
+
+    const result = await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(result.mutedIds.has('msg-1')).toBe(true);
+    expect(result.remaining).toHaveLength(1);
+    expect(mockImap.setFlag).not.toHaveBeenCalled();
+    expect(newMailAlerts(result).alertCount).toBe(0);
+  });
+
+  it('loses to "Notify me" from another matching rule', async () => {
+    query.mockResolvedValueOnce({ rows: [
+      mkRule([{ type: 'notify' }]),
+      { ...mkRule([{ type: 'silence' }]), id: 'rule-2' },
+    ] });
+
+    const result = await applyInboxRules([mkMsg()], account, mockImap);
+
+    expect(newMailAlerts(result).alertCount).toBe(1);
+  });
+});
+
 describe('applyInboxRules — notify', () => {
   const run = async (rules, { moveFails = false } = {}) => {
     query.mockResolvedValueOnce({ rows: rules }).mockResolvedValue({ rows: [] });

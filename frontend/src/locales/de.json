@@ -2035,7 +2035,9 @@
       "subTabRules": "Regeln",
       "subTabBlockList": "Blockliste",
       "actionMoveSelectFolder": "Ordner auswählen…",
-      "actionMoveRequiresAccount": "Erfordert ein bestimmtes Konto"
+      "actionMoveRequiresAccount": "Erfordert ein bestimmtes Konto",
+      "actionSilence": "Nicht benachrichtigen",
+      "actionSilenceHint": "Kein Ton, kein Hinweis und kein Push für diese Mail; sie bleibt ungelesen. „Benachrichtigen“ aus einer passenden Regel hat Vorrang."
     },
     "blockList": {
       "description": "E-Mails von blockierten Absendern werden automatisch in den Papierkorb verschoben.",

@@ -1191,7 +1191,9 @@
       "running": "Uruchamianie…",
       "runResult": "Gotowe — {{matched}} z {{processed}} wiadomości pasuje",
       "runStarted": "Działa w tle — otrzymasz powiadomienie po zakończeniu",
-      "runError": "Nie udało się uruchomić reguł"
+      "runError": "Nie udało się uruchomić reguł",
+      "actionSilence": "Nie powiadamiaj",
+      "actionSilenceHint": "Bez dźwięku, komunikatu i push dla tej wiadomości; pozostaje nieprzeczytana. „Powiadom mnie” z dowolnej pasującej reguły ma pierwszeństwo."
     },
     "blockList": {
       "description": "Wiadomości od zablokowanych nadawców są automatycznie przenoszone do kosza.",

@@ -1175,7 +1175,9 @@
       "running": "Executando…",
       "runResult": "Concluído — {{matched}} de {{processed}} mensagens corresponderam",
       "runStarted": "Executando em segundo plano — você será notificado quando terminar",
-      "runError": "Falha ao executar as regras"
+      "runError": "Falha ao executar as regras",
+      "actionSilence": "Não notificar",
+      "actionSilenceHint": "Sem som, aviso ou push para este e-mail; ele continua não lido. \"Notificar-me\" de qualquer regra correspondente prevalece."
     },
     "blockList": {
       "description": "E-mails de remetentes bloqueados são movidos automaticamente para a lixeira.",

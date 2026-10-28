@@ -1175,7 +1175,9 @@
       "subTabRules": "Règles",
       "subTabBlockList": "Liste de blocage",
       "actionMoveSelectFolder": "Sélectionner un dossier…",
-      "actionMoveRequiresAccount": "Nécessite un compte spécifique"
+      "actionMoveRequiresAccount": "Nécessite un compte spécifique",
+      "actionSilence": "Ne pas notifier",
+      "actionSilenceHint": "Ni son, ni toast, ni push pour ce mail, qui reste non lu. « Me notifier » sur une autre règle qui correspond l'emporte."
     },
     "blockList": {
       "description": "Les e-mails des expéditeurs bloqués sont automatiquement déplacés vers la corbeille.",

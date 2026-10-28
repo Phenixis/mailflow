@@ -1175,7 +1175,9 @@
       "runResult": "완료 — {{matched}}/{{processed}} 메시지가 일치함",
       "runError": "규칙을 실행하지 못했습니다.",
       "runButton": "받은편지함에서 규칙 실행",
-      "errorSave": "규칙을 저장하지 못했습니다."
+      "errorSave": "규칙을 저장하지 못했습니다.",
+      "actionSilence": "알리지 않음",
+      "actionSilenceHint": "이 메일에 대해 소리, 알림, 푸시를 보내지 않으며 읽지 않은 상태로 둡니다. 일치하는 다른 규칙의 \"알림 받기\"가 우선합니다."
     },
     "blockList": {
       "description": "차단된 발신자가 보낸 이메일은 자동으로 휴지통으로 이동됩니다.",

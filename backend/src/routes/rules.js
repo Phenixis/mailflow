@@ -65,6 +65,7 @@ export function normalizeActions(actions) {
   let forwardSeen = false;
   let categorySeen = false;
   let notifySeen = false;
+  let silenceSeen = false;
   return actions
     .filter(a => {
       if (!a || typeof a.type !== 'string') return false;
@@ -85,6 +86,10 @@ export function normalizeActions(actions) {
       if (a.type === 'notify') {
         if (notifySeen) return false;
         notifySeen = true;
+      }
+      if (a.type === 'silence') {
+        if (silenceSeen) return false;
+        silenceSeen = true;
       }
       return true;
     })

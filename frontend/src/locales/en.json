@@ -1176,7 +1176,9 @@
       "running": "Running…",
       "runResult": "Done — {{matched}} of {{processed}} messages matched",
       "runStarted": "Running in the background — you'll be notified when it finishes",
-      "runError": "Failed to run rules"
+      "runError": "Failed to run rules",
+      "actionSilence": "Don't notify",
+      "actionSilenceHint": "No sound, toast or push for this mail; it stays unread. \"Notify me\" from any matching rule wins."
     },
     "blockList": {
       "description": "Emails from blocked senders are automatically moved to trash.",

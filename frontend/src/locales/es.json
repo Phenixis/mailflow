@@ -1176,7 +1176,9 @@
       "subTabRules": "Reglas",
       "subTabBlockList": "Lista de bloqueo",
       "actionMoveSelectFolder": "Seleccionar carpeta…",
-      "actionMoveRequiresAccount": "Requiere una cuenta específica"
+      "actionMoveRequiresAccount": "Requiere una cuenta específica",
+      "actionSilence": "No notificar",
+      "actionSilenceHint": "Sin sonido, aviso ni push para este correo; sigue sin leer. «Notificarme» de cualquier regla que coincida tiene prioridad."
     },
     "blockList": {
       "description": "Los correos de remitentes bloqueados se mueven automáticamente a la papelera.",

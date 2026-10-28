@@ -63,6 +63,11 @@ describe('validateConditions', () => {
 });
 
 describe('normalizeActions', () => {
+  it('keeps one "Don\'t notify" action', () => {
+    expect(normalizeActions([{ type: 'silence' }, { type: 'star' }, { type: 'silence' }]))
+      .toEqual([{ type: 'silence' }, { type: 'star' }]);
+  });
+
   it('returns actions unchanged when there are no destination actions', () => {
     const actions = [{ type: 'mark_read', value: '' }, { type: 'star', value: '' }];
     expect(normalizeActions(actions)).toEqual(actions);

@@ -1581,7 +1581,9 @@
       "running": "Probíhá…",
       "runResult": "Hotovo — odpovídalo {{matched}} z {{processed}} zpráv",
       "runStarted": "Běží na pozadí — po dokončení budete upozorněni",
-      "runError": "Pravidla se nepodařilo spustit"
+      "runError": "Pravidla se nepodařilo spustit",
+      "actionSilence": "Neupozorňovat",
+      "actionSilenceHint": "U této zprávy žádný zvuk, oznámení ani push; zůstane nepřečtená. Přednost má „Upozornit mě“ z jakéhokoli odpovídajícího pravidla."
     },
     "privacy": {
       "title": "Soukromí",

@@ -19,6 +19,14 @@ export async function inboxIngest({ account, newInboxIds }) {
   jevQueue.enqueue(account.user_id, newInboxIds);
 }
 
+// Core holds new mail whose rules read tags until it is tagged: queue it (if inboxIngest has not yet) and
+// resolve once Jev is done with it.
+export async function awaitTags({ account, messageIds }) {
+  if (!account?.user_id || !messageIds?.length) return;
+  jevQueue.enqueue(account.user_id, messageIds);
+  await jevQueue.settled(messageIds);
+}
+
 export const jevTagsPlugin = {
   id: PLUGIN_ID,
   name: 'Jev tags',
@@ -26,5 +34,8 @@ export const jevTagsPlugin = {
   tier: 1,
   network: { hosts: [JEV_HOST] },
   router: { base: '/api/jev-tags', handler: routes },
-  hooks: { inboxIngest: { handler: inboxIngest, isActive: jevEnabledForAccount } },
+  hooks: {
+    inboxIngest: { handler: inboxIngest, isActive: jevEnabledForAccount },
+    awaitTags: { handler: awaitTags, isActive: jevEnabledForAccount },
+  },
 };

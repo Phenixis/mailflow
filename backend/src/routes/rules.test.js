@@ -24,6 +24,17 @@ describe('validateConditions', () => {
     expect(validateConditions([{ field: 'body', operator: 'contains', value: '' }])).toBeTruthy();
   });
 
+  it('accepts a tag condition with has / not_has and a tag key', () => {
+    expect(validateConditions([{ field: 'tag', operator: 'has', value: 'urgent' }])).toBeNull();
+    expect(validateConditions([{ field: 'tag', operator: 'not_has', value: 'news_letter2' }])).toBeNull();
+  });
+
+  it('rejects a tag condition with another operator or no valid tag key', () => {
+    expect(validateConditions([{ field: 'tag', operator: 'contains', value: 'urgent' }])).toBeTruthy();
+    expect(validateConditions([{ field: 'tag', operator: 'has', value: '' }])).toBeTruthy();
+    expect(validateConditions([{ field: 'tag', operator: 'has', value: 'Not A Key' }])).toBeTruthy();
+  });
+
   it('returns an error for a null condition entry', () => {
     expect(validateConditions([null])).toBeTruthy();
   });
@@ -52,6 +63,11 @@ describe('validateConditions', () => {
 });
 
 describe('normalizeActions', () => {
+  it('keeps one "Don\'t notify" action', () => {
+    expect(normalizeActions([{ type: 'silence' }, { type: 'star' }, { type: 'silence' }]))
+      .toEqual([{ type: 'silence' }, { type: 'star' }]);
+  });
+
   it('returns actions unchanged when there are no destination actions', () => {
     const actions = [{ type: 'mark_read', value: '' }, { type: 'star', value: '' }];
     expect(normalizeActions(actions)).toEqual(actions);

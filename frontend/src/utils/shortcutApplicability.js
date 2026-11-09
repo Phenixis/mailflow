@@ -5,13 +5,13 @@ import { topOpenMessageWindow } from './messageHotkeys.js';
 
 const SELECTED_ACTIONS = new Set([
   'markUnread', 'forward', 'replyAllFromSelection', 'unsubscribe',
-  'loadRemoteImages', 'openLabelPicker', 'reply', 'replyAll',
+  'loadRemoteImages', 'openLabelPicker', 'openTagPicker', 'reply', 'replyAll',
   'toggleStar', 'printMessage', 'toggleRead', 'selectMessage',
 ]);
 
 const WINDOW_ACTIONS = new Set([
   'reply', 'replyAll', 'forward', 'replyAllFromSelection', 'toggleStar',
-  'printMessage', 'markUnread', 'openLabelPicker',
+  'printMessage', 'markUnread', 'openLabelPicker', 'openTagPicker',
 ]);
 
 export function canRunGlobalAction(action, { rightSidebarApplicable }) {

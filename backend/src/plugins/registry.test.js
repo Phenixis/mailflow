@@ -146,4 +146,13 @@ describe('plugin registry — per-hook isActive & hasActive', () => {
     expect(r.hasActive('ingest', { account: { gtd_enabled: false } })).toBe(false);
     expect(r.hasActive('nonexistent', {})).toBe(false);
   });
+
+  it('validates the network hosts a plugin declares', () => {
+    const r = createPluginRegistry();
+    const base = { id: 'net', name: 'Net', version: '1.0.0', tier: 1 };
+    expect(() => r.register({ ...base, network: { hosts: ['api.example.com'] } })).not.toThrow();
+    for (const [i, network] of [{ hosts: [] }, { hosts: ['https://x.com'] }, { hosts: 'x.com' }, {}, null].entries()) {
+      expect(() => r.register({ ...base, id: `bad${i}`, network })).toThrow(/network.hosts/);
+    }
+  });
 });

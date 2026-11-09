@@ -67,6 +67,7 @@ import TodoistTaskModal from './TodoistTaskModal.jsx';
 import SenderAvatarImage from './SenderAvatarImage.jsx';
 import ContextMenu from './ContextMenu.jsx';
 import { holdUndoable, releaseUndoable, UNDO_COMMIT_DELAY_MS } from '../utils/undoableAction.js';
+import { HeaderTags } from '../tags/TagPills.jsx';
 
 function linkifyText(text) {
   const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1590,6 +1591,7 @@ export default function MessagePane({ windowMessageId = null, onWindowClose = nu
               </span>
               <SpamBadge message={message} onClick={(m) => setSpamExplainMessageId(m.id)} />
               <PluginSlot name="message-header-meta" ctx={{ message, account }} />
+              <HeaderTags message={message} />
             </div>
           </div>
 

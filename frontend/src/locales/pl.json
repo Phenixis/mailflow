@@ -1024,6 +1024,10 @@
       "toggleRightSidebar": {
         "label": "Przełącz prawy panel",
         "description": "Ukryj lub pokaż prawy panel boczny"
+      },
+      "openTagPicker": {
+        "label": "Otaguj wiadomość",
+        "description": "Dodaj lub usuń tagi w zaznaczonej wiadomości"
       }
     }
   },
@@ -2504,6 +2508,21 @@
       "confirmDelete": "Usunąć tag „{{name}}” i usunąć go ze wszystkich wiadomości?",
       "add": "Dodaj tag",
       "create": "Utwórz"
+    },
+    "filter": {
+      "all": "Cała poczta",
+      "label": "Filtr tagów",
+      "modeAny": "dowolny z nich",
+      "modeAll": "wszystkie",
+      "modeHint": "Pokaż pocztę z dowolnym z wybranych tagów lub tylko pocztę ze wszystkimi"
+    },
+    "picker": {
+      "count": "{{n}} z {{total}}"
+    },
+    "toast": {
+      "added": "Dodano tag „{{name}}” do wiadomości: {{n}}",
+      "removed": "Usunięto tag „{{name}}” z wiadomości: {{n}}",
+      "failed": "Nie udało się zaktualizować tagu: {{error}}"
     }
   },
   "templates": {

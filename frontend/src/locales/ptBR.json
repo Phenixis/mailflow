@@ -1008,6 +1008,10 @@
       "toggleRightSidebar": {
         "label": "Alternar barra lateral direita",
         "description": "Ocultar ou mostrar a barra lateral direita"
+      },
+      "openTagPicker": {
+        "label": "Marcar mensagem com tags",
+        "description": "Adicionar ou remover tags da mensagem selecionada"
       }
     }
   },
@@ -2481,6 +2485,21 @@
       "confirmDelete": "Excluir a tag \"{{name}}\" e removê-la de todas as mensagens?",
       "add": "Adicionar uma tag",
       "create": "Criar"
+    },
+    "filter": {
+      "all": "Todos os e-mails",
+      "label": "Filtro de tags",
+      "modeAny": "qualquer uma",
+      "modeAll": "todas",
+      "modeHint": "Mostrar e-mails com qualquer uma das tags escolhidas, ou apenas os que têm todas"
+    },
+    "picker": {
+      "count": "{{n}} de {{total}}"
+    },
+    "toast": {
+      "added": "Tag \"{{name}}\" adicionada a {{n}} mensagem(ns)",
+      "removed": "Tag \"{{name}}\" removida de {{n}} mensagem(ns)",
+      "failed": "Não foi possível atualizar a tag: {{error}}"
     }
   },
   "templates": {

@@ -332,6 +332,9 @@ const SAME_VALUE_ALLOWED = {
   // "Name" / "Color" — plain cognates
   'tags.settings.name':  [['de', 'en'], ['it', 'ptBR']],
   'tags.settings.color': [['en', 'es']],
+  // "todas" / "{{n}} de {{total}}" — plain cognates
+  'tags.filter.modeAll': [['es', 'ptBR']],
+  'tags.picker.count':   [['cs', 'pl'], ['es', 'ptBR']],
 
   // ── Jev tags plugin ────────────────────────────────────────────────────────
   // "Jev" — product name, same everywhere

@@ -56,6 +56,8 @@ import { RowTagPills } from '../tags/TagPills.jsx';
 import { createLatestRequest } from '../utils/latestRequest.js';
 import { refreshListWindow, createTrailingRefresh, hasMoreRows, fetchListWindow, fetchPageOrLast } from '../utils/listRefresh.js';
 import { applyReadGuard as guardReads, clearReadGuard, failMarkRead, setPending, settleMarkRead } from '../utils/pendingReads.js';
+import TagFilterBar from '../tags/TagFilterBar.jsx';
+import TagBulkButton from '../tags/TagBulkButton.jsx';
 import { applyDeleteGuard, clearDeleteGuard, clearPendingDelete, setCompletedDelete, setPendingDelete, threadDeleteGuardKey } from '../utils/pendingDeletes.js';
 import {
   archiveInChunks,
@@ -3737,6 +3739,7 @@ function MailboxList() {
 
       {/* Catching up after the app resumed, or failed to (#748). */}
       <ResumeStatus />
+      <TagFilterBar />
 
       {/* Message list */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -4005,6 +4008,8 @@ function MailboxList() {
                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
               </svg>
             </BulkBtn>
+
+            <TagBulkButton ids={[...selectedIds]} Btn={BulkBtn} />
 
             {/* Move button + folder picker */}
             <div style={{ position: 'relative' }} ref={folderPickerRef}>
@@ -4394,6 +4399,7 @@ function MailboxList() {
             defaultSnoozeView={contextMenu.defaultSnoozeView}
             onClose={() => setContextMenu(null)}
             onAction={(action, data) => handleContextAction(action, contextMenu.message, data)}
+            tagTargetIds={selectedIds.size > 1 && selectedIds.has(contextMenu.message.id) ? [...selectedIds] : null}
           />
         )}
 

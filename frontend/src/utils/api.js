@@ -1,4 +1,5 @@
 import { orderedRead } from './readOrder.js';
+import { getTagFilter } from '../tags/filterState.js';
 
 const BASE = '/api';
 
@@ -397,7 +398,8 @@ export const api = {
 
   // Mail
   getMessages: (params) => {
-    const qs = new URLSearchParams(params).toString();
+    const { ids, mode } = getTagFilter();
+    const qs = new URLSearchParams(ids.length ? { ...params, tag: ids.join(','), tagMode: mode } : params).toString();
     return request('GET', `/mail/messages?${qs}`);
   },
   getMessage: (id) => request('GET', `/mail/messages/${id}`),
@@ -690,6 +692,7 @@ export const api = {
   tagDelete: (id) => request('DELETE', `/tags/definitions/${id}`),
   tagsForMessages: (ids) => request('GET', `/tags/messages?ids=${ids.join(',')}`),
   tagSet: (messageId, tagId, applied) => request('PUT', `/tags/messages/${messageId}/tags/${tagId}`, { applied }),
+  tagBulk: (messageIds, tagId, applied) => request('POST', '/tags/messages/bulk', { messageIds, tagId, applied }),
 
   // Jev tags (plugin): connection settings, one yes/no question per tag, account opt-in, explanations.
   jevSettings: () => request('GET', '/jev-tags/settings'),

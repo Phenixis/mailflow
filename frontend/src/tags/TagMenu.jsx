@@ -1,8 +1,9 @@
 import TagPickerList from './TagPickerList.jsx';
 import { useTranslation } from 'react-i18next';
 
-// The Tags submenu of the message context menu: a back row, then the tags to toggle.
-export default function TagMenu({ messageId, onBack }) {
+// The Tags submenu of the message context menu: a back row, then the tags to toggle. `targetIds` are
+// the messages it acts on (the clicked one, or every selected row when the click was on a selection).
+export default function TagMenu({ targetIds, onBack }) {
   const { t } = useTranslation();
   return (
     <>
@@ -20,7 +21,7 @@ export default function TagMenu({ messageId, onBack }) {
         </svg>
         <span>{t('tags.title')}</span>
       </div>
-      <TagPickerList messageId={messageId} />
+      <TagPickerList messageIds={targetIds} />
     </>
   );
 }

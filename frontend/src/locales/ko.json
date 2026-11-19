@@ -1008,6 +1008,10 @@
       },
       "gtdDone": {
         "description": "선택한 GTD 메시지를 완료로 표시"
+      },
+      "openTagPicker": {
+        "label": "메시지 태그",
+        "description": "선택한 메시지에 태그를 추가하거나 제거합니다"
       }
     },
     "browserMailboxFallback": "브라우저 환경: g 입력 후 1–9를 누르면 해당 편지함으로 이동하고, g 입력 후 l을 누르면 라벨 선택기가 열립니다."
@@ -2482,6 +2486,21 @@
       "confirmDelete": "\"{{name}}\" 태그를 삭제하고 모든 메시지에서 제거할까요?",
       "add": "태그 추가",
       "create": "만들기"
+    },
+    "filter": {
+      "all": "모든 메일",
+      "label": "태그 필터",
+      "modeAny": "하나라도",
+      "modeAll": "모두",
+      "modeHint": "선택한 태그 중 하나라도 있는 메일을 보거나, 모두 있는 메일만 봅니다"
+    },
+    "picker": {
+      "count": "{{total}}개 중 {{n}}개"
+    },
+    "toast": {
+      "added": "\"{{name}}\" 태그를 메시지 {{n}}개에 추가했습니다",
+      "removed": "\"{{name}}\" 태그를 메시지 {{n}}개에서 제거했습니다",
+      "failed": "태그를 업데이트할 수 없습니다: {{error}}"
     }
   },
   "templates": {

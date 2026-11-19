@@ -37,6 +37,7 @@ export const ACTION_DEFS = {
     return [action, { groupKey: 'shortcuts.groups.navigation', labelKey: `shortcuts.actions.${action}.label`, descriptionKey: `shortcuts.actions.${action}.description`, defaultKey: `ctrl+${n}` }];
   })),
   openLabelPicker: { groupKey: 'shortcuts.groups.navigation', labelKey: 'shortcuts.actions.openLabelPicker.label', descriptionKey: 'shortcuts.actions.openLabelPicker.description', defaultKey: 'ctrl+l' },
+  openTagPicker: { groupKey: 'shortcuts.groups.messageActions', labelKey: 'shortcuts.actions.openTagPicker.label', descriptionKey: 'shortcuts.actions.openTagPicker.description', defaultKey: 'l' },
   toggleRightSidebar: { groupKey: 'shortcuts.groups.navigation', labelKey: 'shortcuts.actions.toggleRightSidebar.label', descriptionKey: 'shortcuts.actions.toggleRightSidebar.description', defaultKey: 'ctrl+/' },
 
   // ── Message actions ────────────────────────────────────────────────────────
@@ -197,6 +198,7 @@ export function resolveShortcutAction(event, userOverrides = {}) {
 const GENERAL_ACTION_TEXT = {
   toggleLeftSidebar: ['Toggle left sidebar', 'Hide or show the left sidebar'],
   openLabelPicker: ['Open label picker', 'Copy the selected message to a folder'],
+  openTagPicker: ['Tag message', 'Add or remove tags on the selected message'],
   replyAllFromSelection: ['Reply all from selection', 'Reply all to the selected message'],
   markUnread: ['Mark unread', 'Mark the selected message unread'],
   unsubscribe: ['Unsubscribe', 'Unsubscribe from the selected mailing list'],

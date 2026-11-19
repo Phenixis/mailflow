@@ -1009,6 +1009,10 @@
       "toggleRightSidebar": {
         "label": "切换右侧边栏",
         "description": "隐藏或显示右侧边栏"
+      },
+      "openTagPicker": {
+        "label": "给邮件加标签",
+        "description": "为所选邮件添加或移除标签"
       }
     }
   },
@@ -2482,6 +2486,21 @@
       "confirmDelete": "删除标签“{{name}}”并将其从所有邮件中移除？",
       "add": "添加标签",
       "create": "创建"
+    },
+    "filter": {
+      "all": "所有邮件",
+      "label": "标签筛选",
+      "modeAny": "任一标签",
+      "modeAll": "所有标签",
+      "modeHint": "显示带有任一所选标签的邮件，或仅显示带有全部标签的邮件"
+    },
+    "picker": {
+      "count": "{{total}} 封中的 {{n}} 封"
+    },
+    "toast": {
+      "added": "已将标签“{{name}}”添加到 {{n}} 封邮件",
+      "removed": "已从 {{n}} 封邮件中移除标签“{{name}}”",
+      "failed": "无法更新标签：{{error}}"
     }
   },
   "templates": {

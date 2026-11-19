@@ -62,7 +62,21 @@ export function useMessageTags(messageId) {
   return tags || [];
 }
 
-// The list of tag definitions is fetched by several screens at once (the settings and the picker).
+// How many of `ids` carry each tag, as { tagId: count }.
+export function countTags(ids, byMessage) {
+  const counts = {};
+  for (const id of ids) for (const tag of byMessage[id] || []) counts[tag.tagId] = (counts[tag.tagId] || 0) + 1;
+  return counts;
+}
+
+// The same for the selected messages, fetching their tags once.
+export function useTagCounts(ids) {
+  const byMessage = useTagStore((s) => s.byMessage);
+  useEffect(() => { ids.forEach(requestTags); }, [ids.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  return countTags(ids, byMessage);
+}
+
+// The list of tag definitions is fetched by several screens at once (the settings, the filter bar and the pickers).
 // After a change, call bumpTagDefinitions(); every screen that depends on useTagDefinitionsRevision()
 // then reloads, so none shows a stale list.
 export const bumpTagDefinitions = () => useTagStore.setState((s) => ({ definitionsRevision: s.definitionsRevision + 1 }));

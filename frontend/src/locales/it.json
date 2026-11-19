@@ -1009,6 +1009,10 @@
       "toggleRightSidebar": {
         "label": "Mostra o nascondi la barra laterale destra",
         "description": "Nascondi o mostra la barra laterale destra"
+      },
+      "openTagPicker": {
+        "label": "Assegna tag al messaggio",
+        "description": "Aggiungi o rimuovi tag dal messaggio selezionato"
       }
     }
   },
@@ -2482,6 +2486,21 @@
       "confirmDelete": "Eliminare il tag «{{name}}» e rimuoverlo da tutti i messaggi?",
       "add": "Aggiungi un tag",
       "create": "Crea"
+    },
+    "filter": {
+      "all": "Tutta la posta",
+      "label": "Filtro per tag",
+      "modeAny": "almeno uno",
+      "modeAll": "tutti",
+      "modeHint": "Mostra la posta con almeno uno dei tag scelti, oppure solo quella che li ha tutti"
+    },
+    "picker": {
+      "count": "{{n}} su {{total}}"
+    },
+    "toast": {
+      "added": "Tag «{{name}}» aggiunto a {{n}} messaggio/i",
+      "removed": "Tag «{{name}}» rimosso da {{n}} messaggio/i",
+      "failed": "Impossibile aggiornare il tag: {{error}}"
     }
   },
   "templates": {

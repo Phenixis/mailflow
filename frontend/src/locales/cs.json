@@ -1094,6 +1094,10 @@
       "toggleRightSidebar": {
         "label": "Pravý postranní panel",
         "description": "Skrýt nebo zobrazit pravý postranní panel"
+      },
+      "openTagPicker": {
+        "label": "Označit zprávu štítky",
+        "description": "Přidat nebo odebrat štítky u vybrané zprávy"
       }
     }
   },
@@ -2505,6 +2509,21 @@
       "confirmDelete": "Smazat štítek „{{name}}“ a odebrat ho ze všech zpráv?",
       "add": "Přidat štítek",
       "create": "Vytvořit"
+    },
+    "filter": {
+      "all": "Veškerá pošta",
+      "label": "Filtr štítků",
+      "modeAny": "kterýkoli z nich",
+      "modeAll": "všechny",
+      "modeHint": "Zobrazit poštu s kterýmkoli z vybraných štítků, nebo jen poštu se všemi"
+    },
+    "picker": {
+      "count": "{{n}} z {{total}}"
+    },
+    "toast": {
+      "added": "Štítek „{{name}}“ přidán ke zprávám: {{n}}",
+      "removed": "Štítek „{{name}}“ odebrán ze zpráv: {{n}}",
+      "failed": "Štítek se nepodařilo aktualizovat: {{error}}"
     }
   },
   "templates": {

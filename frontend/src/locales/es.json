@@ -1009,6 +1009,10 @@
       "toggleRightSidebar": {
         "label": "Alternar la barra lateral derecha",
         "description": "Ocultar o mostrar la barra lateral derecha"
+      },
+      "openTagPicker": {
+        "label": "Etiquetar mensaje",
+        "description": "Añadir o quitar etiquetas del mensaje seleccionado"
       }
     }
   },
@@ -2482,6 +2486,21 @@
       "confirmDelete": "¿Eliminar la etiqueta «{{name}}» y quitarla de todos los mensajes?",
       "add": "Añadir una etiqueta",
       "create": "Crear"
+    },
+    "filter": {
+      "all": "Todo el correo",
+      "label": "Filtro de etiquetas",
+      "modeAny": "cualquiera",
+      "modeAll": "todas",
+      "modeHint": "Mostrar el correo con cualquiera de las etiquetas elegidas, o solo el que las tiene todas"
+    },
+    "picker": {
+      "count": "{{n}} de {{total}}"
+    },
+    "toast": {
+      "added": "Etiqueta «{{name}}» añadida a {{n}} mensaje(s)",
+      "removed": "Etiqueta «{{name}}» quitada de {{n}} mensaje(s)",
+      "failed": "No se pudo actualizar la etiqueta: {{error}}"
     }
   },
   "templates": {

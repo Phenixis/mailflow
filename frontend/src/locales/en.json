@@ -1009,6 +1009,10 @@
       "toggleRightSidebar": {
         "label": "Toggle right sidebar",
         "description": "Hide or show the right sidebar"
+      },
+      "openTagPicker": {
+        "label": "Tag message",
+        "description": "Add or remove tags on the selected message"
       }
     }
   },
@@ -2482,6 +2486,21 @@
       "confirmDelete": "Delete the tag \"{{name}}\" and remove it from every message?",
       "add": "Add a tag",
       "create": "Create"
+    },
+    "filter": {
+      "all": "All mail",
+      "label": "Tag filter",
+      "modeAny": "any of them",
+      "modeAll": "all of them",
+      "modeHint": "Show mail with any of the selected tags, or only mail with all of them"
+    },
+    "picker": {
+      "count": "{{n}} of {{total}}"
+    },
+    "toast": {
+      "added": "Tag \"{{name}}\" added to {{n}} message(s)",
+      "removed": "Tag \"{{name}}\" removed from {{n}} message(s)",
+      "failed": "Could not update the tag: {{error}}"
     }
   },
   "templates": {

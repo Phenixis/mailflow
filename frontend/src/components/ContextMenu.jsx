@@ -24,7 +24,7 @@ import { spamFolderPaths as spamFolderPathsFor } from '../utils/spamFolders.js';
 // ─── Context Menu ─────────────────────────────────────────────────────────────
 const CATEGORIES = ['primary', 'newsletter', 'promotion', 'automated', 'social'];
 
-export default function ContextMenu({ x, y, message, onClose, onAction, defaultMoveView = false, defaultSnoozeView = false, variant = 'inbox', selectedText = '' }) {
+export default function ContextMenu({ x, y, message, onClose, onAction, defaultMoveView = false, defaultSnoozeView = false, variant = 'inbox', selectedText = '', tagTargetIds = null }) {
   const { t } = useTranslation();
   const uiScale = useUiScale();
   const isMobile = useMobile();
@@ -285,7 +285,7 @@ export default function ContextMenu({ x, y, message, onClose, onAction, defaultM
         ...(menuPolicy.tags ? [{
           label: t('tags.title'),
           icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
-          action: () => setPluginSubmenu(() => (onBack) => <TagMenu messageId={message.id} onBack={onBack} />),
+          action: () => setPluginSubmenu(() => (onBack) => <TagMenu targetIds={tagTargetIds || [message.id]} onBack={onBack} />),
           keepOpen: true,
           hasSubmenu: true,
         }] : []),

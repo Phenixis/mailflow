@@ -118,6 +118,22 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store, plugin sup
     expect(await store.applyTag(U2, M2, 'urgent', 'jev-tags')).toBe('applied'); // not dismissed, so it can return
   });
 
+  it('sets a tag on several messages at once, only for the ones the user owns, and lists their copies', async () => {
+    const bulk = await store.ensureDefinition(U1, { key: 'bulk', name: 'Bulk' });
+    await db.query(`INSERT INTO messages (id, account_id, folder, date, message_id) VALUES
+      ('${c(5)}', '${A1}', 'INBOX', now(), '<five@x.example>'),
+      ('${c(6)}', '${A1}', 'Archive', now(), '<five@x.example>')`);
+    expect((await store.setManualTags(U1, [c(5), M2], bulk.id, true)).sort()).toEqual([c(5)]); // M2 is user 2's
+    expect(await keysOf(U1, c(6))).toEqual(['bulk:manual']); // the other copy shows it too
+    expect((await store.copiesOfMessages(U1, [c(5)])).sort()).toEqual([c(5), c(6)]);
+    expect(await store.copiesOfMessages(U2, [c(5)])).toEqual([]);
+    expect(await store.setManualTags(U2, [c(5)], bulk.id, true)).toEqual([]); // not their tag
+    expect(await store.setManualTags(U1, [c(5)], bulk.id, false)).toEqual([c(5)]);
+    expect(await keysOf(U1, c(6))).toEqual([]);
+    expect(await store.setManualTags(U1, [], bulk.id, true)).toEqual([]);
+    await db.query(`DELETE FROM messages WHERE id IN ('${c(5)}', '${c(6)}')`);
+  });
+
   it('gives examples from how the user tagged, leaving out messages carrying an excluded tag', async () => {
     await db.query(`INSERT INTO messages (id, account_id, folder, date, subject, from_name) VALUES
       ('${c(1)}', '${A1}', 'INBOX', now(), 'Flight to Rome', 'Airline'),

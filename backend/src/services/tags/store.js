@@ -102,44 +102,54 @@ export async function tagsForMessages(userId, messageIds) {
   return out;
 }
 
-// The user adds or removes a tag by hand on a message. Removing keeps the row (dismissed) so a plugin
-// does not put the tag back; adding again clears that and takes ownership as 'manual'. Returns false
-// when the message or the tag is not the user's.
-export async function setManualTag(userId, messageId, tagId, on) {
+// The user adds or removes a tag by hand on one or more messages. Removing keeps the row (dismissed) so
+// a plugin does not put the tag back; adding again clears that and takes ownership as 'manual'.
+// Returns the ids of the messages that were the user's and got the change (none when the tag is not
+// the user's).
+export async function setManualTags(userId, messageIds, tagId, on) {
+  if (!messageIds.length) return [];
   const { rows } = await query(
     `WITH owned AS (
-       SELECT m.account_id, tag_email_key(m.message_id, m.id) AS email_key
+       SELECT m.id, m.account_id, tag_email_key(m.message_id, m.id) AS email_key
          FROM messages m
          JOIN email_accounts a ON a.id = m.account_id
-        WHERE m.id = $1 AND a.user_id = $3
+        WHERE m.id = ANY($1::uuid[]) AND a.user_id = $3
           AND EXISTS (SELECT 1 FROM tag_definitions d WHERE d.id = $2 AND d.user_id = $3)
      ), written AS (
        INSERT INTO message_tags (account_id, email_key, tag_id, source, dismissed)
-       SELECT account_id, email_key, $2::uuid, 'manual', NOT $4::boolean FROM owned
+       SELECT DISTINCT account_id, email_key, $2::uuid, 'manual', NOT $4::boolean FROM owned
        ON CONFLICT (account_id, email_key, tag_id)
          DO UPDATE SET dismissed = EXCLUDED.dismissed, source = 'manual', orphaned_at = NULL
        RETURNING 1
      )
-     SELECT 1 FROM owned`,
-    [messageId, tagId, userId, on]
+     SELECT id FROM owned`,
+    [messageIds, tagId, userId, on]
   );
-  return rows.length > 0;
+  return rows.map((r) => r.id);
+}
+
+// Returns false when the message or the tag is not the user's.
+export async function setManualTag(userId, messageId, tagId, on) {
+  return (await setManualTags(userId, [messageId], tagId, on)).length > 0;
 }
 
 // Every row of the same email that the user has (the same message in another folder, or in All Inboxes),
-// including `messageId` itself. Empty when the message is not the user's.
-export async function copiesOfMessage(userId, messageId) {
+// including each of `messageIds` itself. Empty when none of them is the user's.
+export async function copiesOfMessages(userId, messageIds) {
+  if (!messageIds.length) return [];
   const { rows } = await query(
-    `SELECT c.id
+    `SELECT DISTINCT c.id
        FROM messages m
        JOIN email_accounts a ON a.id = m.account_id
        JOIN messages c ON c.account_id = m.account_id
         AND (c.id = m.id OR (NULLIF(m.message_id, '') IS NOT NULL AND c.message_id = m.message_id))
-      WHERE m.id = $1 AND a.user_id = $2`,
-    [messageId, userId]
+      WHERE m.id = ANY($1::uuid[]) AND a.user_id = $2`,
+    [messageIds, userId]
   );
   return rows.map((r) => r.id);
 }
+
+export const copiesOfMessage = (userId, messageId) => copiesOfMessages(userId, [messageId]);
 
 // ── orphans ───────────────────────────────────────────────────────────────────
 const ORPHAN_GRACE = "interval '7 days'";

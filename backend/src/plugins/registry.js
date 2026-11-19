@@ -15,6 +15,7 @@
 //     router?:  { base: '/api/gtd', handler, json?: { limit } }, // Express router to mount
 //     hooks?:   { [hookName]: handler },     // event/collect handlers — see below
 //     isActive?: (ctx) => boolean,          // gate ALL of this plugin's handlers per call
+//     network?: { hosts: ['api.example.com'] }, // HTTPS hosts core may call on the plugin's behalf (httpRequest)
 //   }
 //
 // A hook entry is either a bare handler function `async (ctx) => value | void`, or an object
@@ -59,6 +60,12 @@ export function createPluginRegistry() {
     for (const [hookName, entry] of Object.entries(manifest.hooks || {})) {
       const ok = typeof entry === 'function' || (entry && typeof entry.handler === 'function');
       if (!ok) throw new Error(`plugin "${id}" hook "${hookName}" must be a function or { handler }`);
+    }
+    if (manifest.network !== undefined) {
+      const hosts = manifest.network?.hosts;
+      if (!Array.isArray(hosts) || !hosts.length || !hosts.every((h) => typeof h === 'string' && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(h))) {
+        throw new Error(`plugin "${id}" network.hosts must be a non-empty list of hostnames`);
+      }
     }
     plugins.set(id, manifest);
     return manifest;

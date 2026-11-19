@@ -8,7 +8,9 @@ vi.mock('../db.js', () => ({ query: vi.fn() }));
 import { query } from '../db.js';
 import * as store from './store.js';
 
-const migration = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../migrations/0079_tags.sql'), 'utf8');
+const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), '../../../migrations');
+const migration = readFileSync(join(migrationsDir, '0079_tags.sql'), 'utf8');
+const pluginColumns = readFileSync(join(migrationsDir, '0082_tags_plugin_columns.sql'), 'utf8');
 const U1 = '00000000-0000-4000-8000-000000000001';
 const U2 = '00000000-0000-4000-8000-000000000002';
 const A1 = '00000000-0000-4000-8000-0000000000a1';
@@ -39,6 +41,7 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags store (PostgreSQL
         ('${M2}', '${A2}', 'INBOX', 1, '<m2@x.example>')`);
     await db.query(migration);
     await db.query(migration); // idempotent: the runner may replay it
+    await db.query(pluginColumns);
     query.mockImplementation((sql, params) => db.query(sql, params));
   });
   afterAll(async () => {

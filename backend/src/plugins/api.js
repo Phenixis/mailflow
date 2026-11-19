@@ -18,6 +18,9 @@
 import { getMailEngine } from './mailEngine.js';
 import * as labelsWrite from '../services/labels.js';
 import { archiveInboxCopy as _archiveInboxCopy } from '../services/archiveInbox.js';
+import * as tagsStore from '../services/tags/store.js';
+import { encrypt, decrypt } from '../services/encryption.js';
+import { httpRequest as _httpRequest } from './network.js';
 
 // ── Labels (read) ─────────────────────────────────────────────────────────────
 // Thread-aware read over a set of label folders: heads grouped by label with thread-level
@@ -105,3 +108,44 @@ export {
   getLabelMetadata,
   setMessageAnnotation,
 } from '../services/mailAccess.js';
+
+// ── Tags ──────────────────────────────────────────────────────────────────────
+// Read the user's tag definitions, create a tag if missing, put a tag on a message and take it back.
+// A plugin's tags carry its id as their `source`; it can only remove what it applied, and it never
+// overrides a tag the user set or removed by hand (applyTag then reports 'skipped').
+export const listTagDefinitions = (userId) => tagsStore.listDefinitions(userId);
+export const ensureTagDefinition = (userId, definition) => tagsStore.ensureDefinition(userId, definition);
+
+// Tags belong to the email, so every copy of it (another folder, All Inboxes) changed too.
+async function notifyTagsChanged(userId, messageId) {
+  try {
+    const copies = await tagsStore.copiesOfMessage(userId, messageId);
+    getMailEngine().broadcast({ type: 'tags_updated', messageIds: copies.length ? copies : [messageId] }, userId);
+  } catch { /* best effort */ }
+}
+export async function applyTag(pluginId, userId, messageId, tagKey) {
+  const result = await tagsStore.applyTag(userId, messageId, tagKey, pluginId);
+  if (result === 'applied') await notifyTagsChanged(userId, messageId);
+  return result;
+}
+export async function removeTag(pluginId, userId, messageId, tagKey) {
+  const removed = await tagsStore.removeTag(userId, messageId, tagKey, pluginId);
+  if (removed) await notifyTagsChanged(userId, messageId);
+  return removed;
+}
+
+// How the user tagged their own mail: { positives, negatives } as [{ subject, sender }], to show a
+// classifier what a tag means. Messages carrying any of `excludeIfTagged` are left out.
+export const listTagExamples = (userId, tagKey, options) => tagsStore.listTagExamples(userId, tagKey, options);
+
+// Newest INBOX messages of the user's accounts, optionally only those the plugin has not annotated.
+export const listInboxMessageIds = (userId, accountIds, limit, options) => tagsStore.listInboxMessageIds(userId, accountIds, limit, options);
+
+// ── Secrets ───────────────────────────────────────────────────────────────────
+// Encrypt/decrypt a credential with the installation's key (the same one that protects mailbox passwords).
+export const encryptSecret = (plaintext) => encrypt(plaintext);
+export const decryptSecret = (value) => decrypt(value);
+
+// ── Network ───────────────────────────────────────────────────────────────────
+// Make an HTTPS request to a host the plugin declared in its manifest's `network.hosts`.
+export const httpRequest = (pluginId, request) => _httpRequest(pluginId, request);

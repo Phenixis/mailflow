@@ -49,7 +49,9 @@ function listOrderSql({ sort, dir, starredFirst, threaded }) {
   return keys.join(', ');
 }
 
-export async function listMessages({ userId, accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category, sort, dir, starredFirst }) {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function listMessages({ userId, accountId, folder = 'INBOX', limit = 50, offset = 0, unreadOnly, threaded, category, sort, dir, starredFirst, tag, tagMode }) {
   const accountsResult = await query(
     'SELECT id, include_in_unified_inbox FROM email_accounts WHERE user_id = $1 AND enabled = true',
     [userId]
@@ -97,6 +99,21 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
     whereConditions.push(`(m.category IS NULL OR m.category = 'primary')`);
   }
 
+  // Tags: keep only messages carrying the given tag(s) (comma-separated tag ids, up to 10) for this
+  // user: any one of them (default) or all of them (tagMode 'all'). The folder counts below cannot
+  // tell how many match, so a tag filter counts its own rows.
+  const tagIds = typeof tag === 'string'
+    ? [...new Set(tag.split(',').filter(Boolean))].slice(0, 10)
+    : [];
+  const tagFiltered = tagIds.length > 0 && tagIds.every((id) => UUID_RE.test(id));
+  if (tagFiltered) {
+    const needed = tagMode === 'all' ? tagIds.length : 1;
+    whereConditions.push(`(SELECT COUNT(DISTINCT d.id) FROM message_tags mt JOIN tag_definitions d ON d.id = mt.tag_id
+      WHERE mt.account_id = m.account_id AND mt.email_key = tag_email_key(m.message_id, m.id)
+        AND NOT mt.dismissed AND d.user_id = $${p++} AND d.id = ANY($${p++}::uuid[])) >= $${p++}`);
+    values.push(userId, tagIds, needed);
+  }
+
   // #407: hide UID-only placeholder rows whose envelope has not been fetched yet. During a
   // rapid archive/reconcile overlap a UID can be listed before its envelope arrives, rendering
   // as an "Unknown / (no subject)" ghost row. A genuine message always carries at least a
@@ -119,11 +136,11 @@ export async function listMessages({ userId, accountId, folder = 'INBOX', limit 
 
   let total = 0;
   try {
-    if (safeCategory && !isSnoozedView) {
-      // A category tab lists only that category's mail; the folder's counts are of all its mail,
-      // so the list offered pages, or a "Load more", with nothing on them (#611). Counted by
-      // row, as the threaded list is.
-      const r = await query(`SELECT COUNT(*)::int AS n FROM messages m WHERE ${where}`, values);
+    if ((safeCategory && !isSnoozedView) || tagFiltered) {
+      // A category tab, or a tag filter, lists only part of the folder's mail; the folder's counts
+      // are of all its mail, so the list offered pages, or a "Load more", with nothing on them
+      // (#611). Counted by row, as the threaded list is.
+      const r = await query(`SELECT COUNT(*)::int AS n FROM messages m WHERE ${where}`, [...values]);
       total = r.rows[0]?.n ?? 0;
     } else if (isSpecificAccount) {
       const r = await query(

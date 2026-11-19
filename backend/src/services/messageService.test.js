@@ -343,3 +343,43 @@ describe('listMessages — ghost row suppression (#407)', () => {
     expect(query.mock.calls[3][0]).toContain('NOT (m.message_id IS NULL');
   });
 });
+
+describe('listMessages — tag filter', () => {
+  const T1 = '00000000-0000-4000-8000-0000000000e1';
+  const T2 = '00000000-0000-4000-8000-0000000000e2';
+  const accounts = { rows: [{ id: 'acc-1', include_in_unified_inbox: true }] };
+  const run = async (args) => {
+    query.mockResolvedValueOnce(accounts).mockResolvedValueOnce({ rows: [{ n: 3 }] }).mockResolvedValueOnce({ rows: [{ id: 'msg-1' }] });
+    return listMessages({ userId: 'user-1', ...args });
+  };
+
+  it('filters on a tag the user has not dismissed and counts the matching rows itself', async () => {
+    const result = await run({ tag: T1 });
+    const countSql = query.mock.calls[1][0];
+    expect(countSql).toContain('COUNT(*)');
+    expect(countSql).toContain('message_tags');
+    expect(countSql).toContain('NOT mt.dismissed');
+    expect(countSql).toContain('tag_email_key(m.message_id, m.id)'); // tags follow the email, not the row id
+    expect(countSql).not.toContain('total_count');
+    expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', [T1], 1]);
+    expect(result.total).toBe(3);
+    expect(query.mock.calls[2][0]).toContain('message_tags');
+  });
+
+  it('matches any of several tags by default, and all of them with tagMode=all', async () => {
+    await run({ tag: `${T1},${T2}` });
+    expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', [T1, T2], 1]);
+    query.mockClear();
+    await run({ tag: `${T1},${T2}`, tagMode: 'all' });
+    expect(query.mock.calls[1][1]).toEqual([['acc-1'], 'user-1', [T1, T2], 2]);
+    query.mockClear();
+    await run({ tag: `${T1},${T1},,${T2}`, tagMode: 'all' }); // duplicates and empties do not raise the bar
+    expect(query.mock.calls[1][1][3]).toBe(2);
+  });
+
+  it('ignores a tag filter containing an id that is not a uuid, so nothing odd reaches the query', async () => {
+    await run({ tag: `${T1},x' OR 1=1 --` });
+    expect(query.mock.calls[1][0]).toContain('total_count');
+    expect(query.mock.calls[1][0]).not.toContain('message_tags');
+  });
+});

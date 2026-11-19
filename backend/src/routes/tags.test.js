@@ -5,7 +5,7 @@ const broadcast = vi.hoisted(() => vi.fn());
 vi.mock('../index.js', () => ({ imapManager: { broadcast } }));
 vi.mock('../services/tags/store.js', () => ({
   listDefinitions: vi.fn(), createDefinition: vi.fn(), updateDefinition: vi.fn(), deleteDefinition: vi.fn(),
-  tagsForMessages: vi.fn(), setManualTag: vi.fn(), copiesOfMessage: vi.fn(),
+  tagsForMessages: vi.fn(), setManualTag: vi.fn(), setManualTags: vi.fn(), copiesOfMessage: vi.fn(), copiesOfMessages: vi.fn(),
 }));
 
 import 'express-async-errors';
@@ -107,6 +107,27 @@ describe('keeping other views in step', () => {
     broadcast.mockClear();
     store.updateDefinition.mockResolvedValue(null);
     await call('PATCH', `/definitions/${ID}`, { name: 'x' });
+    expect(broadcast).not.toHaveBeenCalled();
+  });
+});
+
+describe('bulk', () => {
+  it('validates the request, applies to the messages that are the user\'s, and tells the open tabs about them and their copies', async () => {
+    expect((await call('POST', '/messages/bulk', { messageIds: [], tagId: ID2, applied: true })).status).toBe(400);
+    expect((await call('POST', '/messages/bulk', { messageIds: ['nope'], tagId: ID2, applied: true })).status).toBe(400);
+    expect((await call('POST', '/messages/bulk', { messageIds: Array(201).fill(ID), tagId: ID2, applied: true })).status).toBe(400);
+    expect((await call('POST', '/messages/bulk', { messageIds: [ID], tagId: 'x', applied: true })).status).toBe(400);
+    expect((await call('POST', '/messages/bulk', { messageIds: [ID], tagId: ID2 })).status).toBe(400);
+    store.setManualTags.mockResolvedValue([ID]);
+    store.copiesOfMessages.mockResolvedValue([ID, 'copy-of-1']);
+    const res = await call('POST', '/messages/bulk', { messageIds: [ID, ID2], tagId: ID2, applied: true });
+    expect(await res.json()).toEqual({ updated: 1 });
+    expect(store.setManualTags).toHaveBeenCalledWith('u1', [ID, ID2], ID2, true);
+    expect(store.copiesOfMessages).toHaveBeenCalledWith('u1', [ID]);
+    expect(broadcast).toHaveBeenCalledWith({ type: 'tags_updated', messageIds: [ID, 'copy-of-1'] }, 'u1');
+    store.setManualTags.mockResolvedValue([]);
+    broadcast.mockClear();
+    expect((await call('POST', '/messages/bulk', { messageIds: [ID], tagId: ID2, applied: false })).status).toBe(404);
     expect(broadcast).not.toHaveBeenCalled();
   });
 });

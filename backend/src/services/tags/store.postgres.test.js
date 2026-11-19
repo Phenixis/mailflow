@@ -115,6 +115,7 @@ describe.skipIf(!process.env.MAILFLOW_TEST_DATABASE_URL)('tags follow the email 
       INSERT INTO users VALUES ('${U1}');
       INSERT INTO email_accounts VALUES ('${A1}', '${U1}', 'imap.x.example'), ('${GMAIL}', '${U1}', 'imap.gmail.com');`);
     await db.query(migration);
+    await db.query(pluginColumns);
     query.mockImplementation((sql, params) => db.query(sql, params));
     urgent = await store.createDefinition(U1, { name: 'Urgent' });
     important = await store.createDefinition(U1, { name: 'Important' });

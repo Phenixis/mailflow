@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMessageTags } from './tagStore.js';
 import TagPickerList from './TagPickerList.jsx';
+import { PluginSlot } from '../plugins/PluginSlot.jsx';
 
 export function Pill({ tag, small }) {
   return (
@@ -25,8 +26,8 @@ export function RowTagPills({ message }) {
   return <span style={{ display: 'inline-flex', gap: 4, flexShrink: 0 }}>{tags.map((tag) => <Pill key={tag.tagId} tag={tag} small />)}</span>;
 }
 
-// Pills in the reading-pane header plus a small editor to add or remove tags by hand. Fragment: lives
-// in a flex row.
+// Pills in the reading-pane header plus a small editor to add or remove tags by hand. Plugins can add
+// their own controls next to it through the 'message-header-badge' slot. Fragment: lives in a flex row.
 export function HeaderTags({ message }) {
   const { t } = useTranslation();
   const tags = useMessageTags(message.id);
@@ -43,6 +44,7 @@ export function HeaderTags({ message }) {
       >
         {open ? t('tags.header.hide') : t('tags.title')}
       </button>
+      <PluginSlot name="message-header-badge" ctx={{ message }} />
       {open && (
         <div style={{ flexBasis: '100%', fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>
           <TagPickerList messageId={message.id} />

@@ -47,7 +47,7 @@ export function HeaderTags({ message }) {
       <PluginSlot name="message-header-badge" ctx={{ message }} />
       {open && (
         <div style={{ flexBasis: '100%', fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>
-          <TagPickerList messageId={message.id} />
+          <TagPickerList messageIds={[message.id]} />
         </div>
       )}
     </>
